@@ -1,0 +1,3317 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports - K Pos</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="manifest" href="manifest.json">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border-light);
+            padding-bottom: 0px;
+            overflow-x: auto;
+            scrollbar-width: none;
+            /* Firefox */
+            -ms-overflow-style: none;
+            /* IE 10+ */
+        }
+
+        .tabs::-webkit-scrollbar {
+            display: none;
+            /* Chrome/Safari */
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .tab-btn.active {
+            color: var(--accent-primary);
+            border-bottom-color: var(--accent-primary);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .filter-bar {
+            background: var(--bg-secondary);
+            padding: 0.5rem 1rem;
+            border-radius: 0.75rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            gap: 1rem;
+            align-items: flex-end;
+            border: 1px solid var(--border-light);
+            flex-wrap: wrap;
+        }
+
+        .summary-totals {
+            display: flex;
+            gap: 1.5rem;
+            background: var(--bg-secondary);
+            padding: 1rem;
+            border-radius: 0.75rem;
+            margin-top: 0.5rem;
+            border: 1px solid var(--border-light);
+            flex-wrap: wrap;
+        }
+
+        .summary-stat {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            min-width: 150px;
+        }
+
+        .summary-stat .label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+        }
+
+        .summary-stat .value {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--text-primary);
+        }
+
+        .table-container th,
+        .table-container td {
+            padding: 0.75rem 1rem !important;
+            border-bottom: 1px solid var(--border-light);
+            text-align: left;
+        }
+
+        th {
+            background: rgba(var(--accent-primary-rgb), 0.05);
+            font-weight: 700;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .table-container {
+            width: 100%;
+            overflow-x: auto;
+            background: var(--bg-secondary);
+            border-radius: 0.75rem;
+            border: 1px solid var(--border-light);
+            -webkit-overflow-scrolling: touch;
+        }
+
+        table {
+            min-width: 800px;
+        }
+
+        @media (max-width: 768px) {
+            .filter-bar {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 1rem;
+                padding: 1rem;
+            }
+
+            .filter-bar>div {
+                width: 100% !important;
+                flex: none !important;
+            }
+
+            .filter-bar input,
+            .filter-bar select {
+                min-width: 0 !important;
+                width: 100% !important;
+            }
+
+            .filter-bar .btn {
+                width: 100%;
+                justify-content: center;
+                margin-top: 0.5rem;
+            }
+
+            .filter-bar div[style*="margin-top: 1.5rem"] {
+                margin-top: 0 !important;
+                width: 100% !important;
+                display: flex;
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .summary-totals {
+                flex-direction: column;
+                gap: 1.25rem;
+                padding: 1.25rem;
+            }
+
+            .summary-stat {
+                width: 100% !important;
+                min-width: 0 !important;
+            }
+
+            .summary-stat .value {
+                font-size: 1.25rem;
+            }
+
+            .content-area {
+                padding: 0.5rem 1rem !important;
+            }
+        }
+
+        .content-area {
+            padding: 0.5rem 1.5rem !important;
+        }
+
+        @media print {
+            @page {
+                size: auto;
+                margin: 10mm;
+            }
+
+            @page purchase-report {
+                size: landscape;
+                margin: 8mm;
+            }
+
+            body.print-purchase,
+            body.print-sales-register {
+                page: purchase-report;
+                width: 100% !important;
+            }
+
+            body.print-purchase .tab-content,
+            body.print-sales-register .tab-content {
+                display: none !important;
+            }
+
+            body.print-purchase #purchase {
+                display: block !important;
+            }
+
+            body.print-sales-register #salesRegister {
+                display: block !important;
+            }
+
+            body.print-purchase #vatPurchaseFilterCard {
+                display: none !important;
+            }
+
+            body.print-sales-register #vatSalesFilterCard {
+                display: none !important;
+            }
+
+            body.print-purchase #vatPurchaseReportView {
+                display: block !important;
+            }
+
+            body.print-sales-register #vatSalesReportView {
+                display: block !important;
+            }
+
+            body.print-purchase #vatPurchaseReportView .filter-bar {
+                display: none !important;
+            }
+
+            body.print-sales-register #vatSalesReportView .filter-bar {
+                display: none !important;
+            }
+
+            body.print-purchase .purchase-print-meta,
+            body.print-sales-register .sales-register-print-meta {
+                display: block !important;
+                visibility: visible !important;
+                margin: 0 0 8px 0 !important;
+                font-size: 8pt !important;
+                font-weight: 600 !important;
+                color: black !important;
+            }
+
+            body.print-purchase #vatPurchaseReportView .report-header,
+            body.print-sales-register #vatSalesReportView .report-header {
+                text-align: center !important;
+                margin-bottom: 8px !important;
+                padding-bottom: 6px !important;
+            }
+
+            body.print-purchase #vatPurchaseReportView .report-header .store-info,
+            body.print-sales-register #vatSalesReportView .report-header .store-info {
+                text-align: center !important;
+            }
+
+            body.print-purchase #vatPurchaseReportView .report-header h1,
+            body.print-sales-register #vatSalesReportView .report-header h1 {
+                text-align: center !important;
+                font-size: 13pt !important;
+            }
+
+            body.print-purchase #vatPurchaseReportView .table-container,
+            body.print-sales-register #vatSalesReportView .table-container {
+                overflow: visible !important;
+                width: 100% !important;
+                margin-top: 0 !important;
+            }
+
+            body.print-purchase #vatPurchaseReportView table,
+            body.print-sales-register #vatSalesReportView table {
+                min-width: 0 !important;
+                width: 100% !important;
+                table-layout: fixed !important;
+                font-size: 6.2pt !important;
+            }
+
+            body.print-purchase #vatPurchaseReportView th,
+            body.print-purchase #vatPurchaseReportView td,
+            body.print-sales-register #vatSalesReportView th,
+            body.print-sales-register #vatSalesReportView td {
+                padding: 2px 3px !important;
+                border: 1px solid #999 !important;
+                word-break: break-word !important;
+                white-space: normal !important;
+                line-height: 1.15 !important;
+            }
+
+            body.print-purchase #vatPurchaseReportView th:nth-child(1),
+            body.print-purchase #vatPurchaseReportView td:nth-child(1),
+            body.print-sales-register #vatSalesReportView th:nth-child(1),
+            body.print-sales-register #vatSalesReportView td:nth-child(1) {
+                width: 8% !important;
+            }
+
+            body.print-purchase #vatPurchaseReportView th:nth-child(2),
+            body.print-purchase #vatPurchaseReportView td:nth-child(2),
+            body.print-purchase #vatPurchaseReportView th:nth-child(3),
+            body.print-purchase #vatPurchaseReportView td:nth-child(3),
+            body.print-purchase #vatPurchaseReportView th:nth-child(5),
+            body.print-purchase #vatPurchaseReportView td:nth-child(5),
+            body.print-sales-register #vatSalesReportView th:nth-child(2),
+            body.print-sales-register #vatSalesReportView td:nth-child(2),
+            body.print-sales-register #vatSalesReportView th:nth-child(3),
+            body.print-sales-register #vatSalesReportView td:nth-child(3),
+            body.print-sales-register #vatSalesReportView th:nth-child(5),
+            body.print-sales-register #vatSalesReportView td:nth-child(5) {
+                width: 7% !important;
+            }
+
+            body.print-purchase #vatPurchaseReportView th:nth-child(4),
+            body.print-purchase #vatPurchaseReportView td:nth-child(4),
+            body.print-sales-register #vatSalesReportView th:nth-child(4),
+            body.print-sales-register #vatSalesReportView td:nth-child(4) {
+                width: 15% !important;
+            }
+
+            body.print-purchase #vatPurchaseReportView th:nth-child(n+6),
+            body.print-purchase #vatPurchaseReportView td:nth-child(n+6),
+            body.print-sales-register #vatSalesReportView th:nth-child(n+6),
+            body.print-sales-register #vatSalesReportView td:nth-child(n+6) {
+                width: 7% !important;
+            }
+
+            .no-print,
+            .no-print * {
+                display: none !important;
+                visibility: hidden !important;
+            }
+
+            html,
+            body {
+                height: auto !important;
+                overflow: visible !important;
+                background: white !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+
+            .app-layout {
+                display: block !important;
+                height: auto !important;
+                min-height: 0 !important;
+                overflow: visible !important;
+            }
+
+            .sidebar,
+            .top-bar,
+            .tabs,
+            .sidebar-overlay,
+            .sidebar-header {
+                display: none !important;
+            }
+
+            .main-content {
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 100% !important;
+                height: auto !important;
+                overflow: visible !important;
+                min-height: 0 !important;
+            }
+
+            .content-area {
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+
+            #printArea {
+                position: static !important;
+                width: 100% !important;
+            }
+
+            .table-container {
+                border: 1px solid #eee !important;
+                border-radius: 0 !important;
+                overflow: visible !important;
+                margin-top: 1rem !important;
+            }
+
+            table {
+                min-width: 100% !important;
+                border-collapse: collapse !important;
+                font-size: 9pt !important;
+            }
+
+            th,
+            td {
+                padding: 4px 6px !important;
+                border-bottom: 1px solid #ddd !important;
+                color: black !important;
+            }
+
+            th {
+                background: #f8f9fa !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .summary-totals {
+                border: 1px solid #eee !important;
+                background: white !important;
+                margin-top: 1.5rem !important;
+                padding: 1.25rem !important;
+                page-break-inside: avoid;
+            }
+
+            .summary-stat .label {
+                color: black !important;
+            }
+
+            .summary-stat .value {
+                color: black !important;
+                font-size: 1.25rem !important;
+            }
+
+            .report-header {
+                display: block !important;
+                text-align: center;
+                margin-bottom: 2rem;
+                padding-bottom: 1rem;
+                border-bottom: 2px solid #333;
+            }
+
+            .report-header h1 {
+                margin: 0.5rem 0 0.5rem 0;
+                font-size: 1.5rem;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                color: black !important;
+            }
+
+            .report-header p {
+                margin: 0;
+                font-size: 0.9rem;
+                color: black !important;
+            }
+
+            .report-header .store-info {
+                margin-bottom: 0.5rem;
+                color: black !important;
+            }
+
+            .report-header .store-name {
+                font-size: 1.4rem;
+                font-weight: bold;
+                margin-bottom: 0.2rem;
+            }
+        }
+
+        .report-header {
+            display: none;
+        }
+
+        /* picker CSS */
+        .cal-cell {
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+
+        .cal-cell:hover:not(.empty) {
+            background: rgba(99, 102, 241, 0.1);
+            border-color: var(--accent-primary);
+        }
+
+        .cal-cell.range-start,
+        .cal-cell.range-end {
+            background: var(--accent-primary) !important;
+            color: var(--text-on-accent) !important;
+        }
+
+        .cal-cell.range-start *,
+        .cal-cell.range-end * {
+            background: transparent !important;
+            color: var(--text-on-accent) !important;
+            opacity: 1 !important;
+        }
+
+        .cal-cell.in-range {
+            background: rgba(var(--accent-primary-rgb), 0.1) !important;
+            border-radius: 0;
+            border-color: transparent;
+        }
+
+        .cal-nav-btn {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .cal-nav-btn:hover {
+            background: var(--border-light) !important;
+        }
+
+        #vatPurchaseFilterCard,
+        #vatSalesFilterCard {
+            background: var(--bg-secondary) !important;
+            color: var(--text-primary) !important;
+            border-color: var(--border-light) !important;
+            box-shadow: var(--shadow-sm);
+        }
+
+        #vatPurchaseFilterCard h2,
+        #vatPurchaseFilterCard label,
+        #vatSalesFilterCard h2,
+        #vatSalesFilterCard label {
+            color: var(--text-primary) !important;
+        }
+
+        #vatPurchaseFilterCard>div:first-child,
+        #vatPurchaseFilterCard>div:last-child,
+        #vatPurchaseFilterCard>div:nth-child(5),
+        #vatSalesFilterCard>div:first-child,
+        #vatSalesFilterCard>div:last-child {
+            border-color: var(--border-light) !important;
+        }
+
+        #vatPurchaseFilterCard .btn,
+        #vatSalesFilterCard .btn {
+            background: var(--accent-primary) !important;
+            border-color: var(--accent-primary) !important;
+            color: var(--text-on-accent) !important;
+        }
+
+        #vatPurchaseReportView .report-header,
+        #vatPurchaseReportView .store-info,
+        #vatPurchaseReportView .report-header h1,
+        #vatSalesReportView .report-header,
+        #vatSalesReportView .store-info,
+        #vatSalesReportView .report-header h1 {
+            color: var(--text-primary) !important;
+        }
+
+        #vatPurchaseReportView .vat-table,
+        #vatSalesReportView .vat-table {
+            background: var(--bg-secondary) !important;
+            color: var(--text-primary) !important;
+        }
+
+        #vatPurchaseReportView .vat-table thead tr,
+        #vatPurchaseReportView .vat-table tfoot tr,
+        #vatSalesReportView .vat-table thead tr,
+        #vatSalesReportView .vat-table tfoot tr {
+            background: rgba(var(--accent-primary-rgb), 0.08) !important;
+            color: var(--text-primary) !important;
+        }
+
+        #vatPurchaseReportView .vat-table th,
+        #vatPurchaseReportView .vat-table td,
+        #vatSalesReportView .vat-table th,
+        #vatSalesReportView .vat-table td {
+            border-color: var(--border-light) !important;
+            color: var(--text-primary) !important;
+        }
+
+        #vatPurchaseReportView .vat-table tbody tr:nth-child(even),
+        #vatSalesReportView .vat-table tbody tr:nth-child(even) {
+            background: rgba(var(--accent-primary-rgb), 0.03) !important;
+        }
+
+        #vatPurchaseReportView .vat-table tbody tr:hover,
+        #vatSalesReportView .vat-table tbody tr:hover {
+            background: rgba(var(--accent-primary-rgb), 0.08) !important;
+        }
+
+        #vatPurchaseReportView .vat-table tfoot td,
+        #vatSalesReportView .vat-table tfoot td {
+            font-weight: 700;
+        }
+
+        #vatPurchaseReportView .table-container,
+        #vatSalesReportView .table-container {
+            background: var(--bg-secondary) !important;
+            border-color: var(--border-light) !important;
+        }
+
+        #vatPurchaseReportView .filter-bar,
+        #vatSalesReportView .filter-bar {
+            background: var(--bg-secondary) !important;
+            border-color: var(--border-light) !important;
+        }
+
+        @media print {
+
+            body.print-purchase #vatPurchaseReportView,
+            body.print-purchase #vatPurchaseReportView .report-header,
+            body.print-purchase #vatPurchaseReportView .store-info,
+            body.print-purchase #vatPurchaseReportView .report-header h1,
+            body.print-purchase #vatPurchaseReportView .purchase-print-meta,
+            body.print-sales-register #vatSalesReportView,
+            body.print-sales-register #vatSalesReportView .report-header,
+            body.print-sales-register #vatSalesReportView .store-info,
+            body.print-sales-register #vatSalesReportView .report-header h1,
+            body.print-sales-register #vatSalesReportView .sales-register-print-meta {
+                background: white !important;
+                color: black !important;
+            }
+
+            body.print-purchase #vatPurchaseReportView .table-container,
+            body.print-purchase #vatPurchaseReportView .vat-table,
+            body.print-sales-register #vatSalesReportView .table-container,
+            body.print-sales-register #vatSalesReportView .vat-table {
+                background: white !important;
+                color: black !important;
+                border-color: #999 !important;
+            }
+
+            body.print-purchase #vatPurchaseReportView .vat-table thead tr,
+            body.print-purchase #vatPurchaseReportView .vat-table tfoot tr,
+            body.print-sales-register #vatSalesReportView .vat-table thead tr,
+            body.print-sales-register #vatSalesReportView .vat-table tfoot tr {
+                background: #f2f2f2 !important;
+                color: black !important;
+            }
+
+            body.print-purchase #vatPurchaseReportView .vat-table tbody tr,
+            body.print-purchase #vatPurchaseReportView .vat-table tbody tr:nth-child(even),
+            body.print-purchase #vatPurchaseReportView .vat-table tbody tr:hover,
+            body.print-sales-register #vatSalesReportView .vat-table tbody tr,
+            body.print-sales-register #vatSalesReportView .vat-table tbody tr:nth-child(even),
+            body.print-sales-register #vatSalesReportView .vat-table tbody tr:hover {
+                background: white !important;
+                color: black !important;
+            }
+
+            body.print-purchase #vatPurchaseReportView .vat-table th,
+            body.print-purchase #vatPurchaseReportView .vat-table td,
+            body.print-sales-register #vatSalesReportView .vat-table th,
+            body.print-sales-register #vatSalesReportView .vat-table td {
+                background: transparent !important;
+                border-color: #999 !important;
+                color: black !important;
+            }
+
+            body.print-purchase #vatPurchaseReportView .vat-table thead th,
+            body.print-purchase #vatPurchaseReportView .vat-table tfoot td,
+            body.print-sales-register #vatSalesReportView .vat-table thead th,
+            body.print-sales-register #vatSalesReportView .vat-table tfoot td {
+                background: #f2f2f2 !important;
+                color: black !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+
+        /* Credit Note Form Styles */
+        .cn-form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 0.75rem 1rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .cn-form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .cn-form-group label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .cn-form-control {
+            background: var(--bg-main);
+            border: 1px solid var(--border-light);
+            border-radius: 0.4rem;
+            padding: 0.4rem 0.6rem;
+            color: var(--text-primary);
+            font-family: var(--font-main);
+            font-size: 0.85rem;
+            width: 100%;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .cn-form-control:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+        }
+
+        .cn-form-control:disabled {
+            opacity: 0.75;
+            cursor: not-allowed;
+            background: rgba(var(--accent-primary-rgb), 0.05);
+        }
+
+        .cn-quick-bar {
+            display: flex;
+            gap: 0.75rem;
+            align-items: flex-end;
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            box-shadow: var(--shadow-sm);
+            flex-wrap: wrap;
+        }
+
+        .cn-quick-bar .cn-form-group {
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .cn-quick-bar .cn-form-group.cn-small {
+            flex: 0 0 80px;
+            min-width: 80px;
+        }
+
+        .cn-quick-bar .cn-form-group.cn-medium {
+            flex: 0 0 120px;
+            min-width: 120px;
+        }
+
+        .cn-grid-container {
+            width: 100%;
+            overflow-x: auto;
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: 0.75rem;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 1rem;
+        }
+
+        .cn-grid {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+            min-width: 1200px;
+        }
+
+        .cn-grid th {
+            background: rgba(var(--accent-primary-rgb), 0.03);
+            border-bottom: 2px solid var(--border-light);
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-size: 0.7rem;
+            letter-spacing: 0.05em;
+            padding: 0.5rem;
+            text-align: left;
+        }
+
+        .cn-grid td {
+            border-bottom: 1px solid var(--border-light);
+            padding: 0.25rem 0.4rem;
+            vertical-align: middle;
+        }
+
+        .cn-grid input,
+        .cn-grid select {
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: 0.25rem;
+            padding: 0.25rem;
+            color: var(--text-primary);
+            font-size: 0.8rem;
+            width: 100%;
+            transition: all 0.15s;
+        }
+
+        .cn-grid input:hover,
+        .cn-grid select:hover {
+            border-color: var(--border-light);
+            background: var(--bg-main);
+        }
+
+        .cn-grid input:focus,
+        .cn-grid select:focus {
+            border-color: var(--accent-primary);
+            background: var(--bg-secondary);
+            outline: none;
+        }
+
+        .cn-grid input[readonly] {
+            background: transparent !important;
+            border-color: transparent !important;
+            cursor: not-allowed;
+            font-weight: 500;
+        }
+
+        .cn-grid-actions {
+            padding: 0.5rem 1rem;
+            background: rgba(var(--accent-primary-rgb), 0.01);
+            border-top: 1px solid var(--border-light);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .cn-btn-icon {
+            background: none;
+            border: none;
+            color: var(--accent-danger);
+            cursor: pointer;
+            padding: 0.25rem;
+            border-radius: 0.25rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s;
+        }
+
+        .cn-btn-icon:hover {
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .cn-autocomplete-wrapper {
+            position: relative;
+        }
+
+        .cn-autocomplete-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-light);
+            border-radius: 0.4rem;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 100;
+            box-shadow: var(--shadow-lg);
+            margin-top: 2px;
+        }
+
+        .cn-suggestion-item {
+            padding: 0.5rem 0.75rem;
+            cursor: pointer;
+            font-size: 0.85rem;
+            display: flex;
+            justify-content: space-between;
+            color: var(--text-primary);
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .cn-suggestion-item:last-child {
+            border-bottom: none;
+        }
+
+        .cn-suggestion-item:hover {
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--accent-primary);
+        }
+
+        .cn-checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.35rem 0;
+        }
+
+        .cn-checkbox-wrapper input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: var(--accent-primary);
+            cursor: pointer;
+        }
+
+        .cn-checkbox-wrapper label {
+            font-size: 0.85rem;
+            cursor: pointer;
+            color: var(--text-primary);
+            text-transform: none !important;
+            letter-spacing: normal !important;
+            font-weight: 500 !important;
+        }
+
+        .cn-header-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1.25fr;
+            gap: 1rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        @media (max-width: 768px) {
+            .cn-header-grid {
+                grid-template-columns: 1fr !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header mobile-only">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <div class="brand-text">K Pos</div>
+                </div>
+                <button class="close-sidebar-btn" onclick="toggleSidebar()">&times;</button>
+            </div>
+
+            <div class="brand" id="sidebarBrand">K Pos</div>
+            <nav class="nav-menu">
+                <a href="index.html" class="nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                    </svg>
+                    <span>Dashboard</span>
+                </a>
+                <a href="billing.html" class="nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                    <span>Billing / POS</span>
+                </a>
+                <a href="sales.html" class="nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m.599-.747C13.101 16.559 12.552 16 12 16c-1.11 0-2.08-.402-2.599-1M12 16V7" />
+                    </svg>
+                    <span>Sales</span>
+                </a>
+                <a href="reports.html" class="nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span>Reports</span>
+                </a>
+                <a href="purchase.html" class="nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                    </svg>
+                    <span>Purchase Invoice</span>
+                </a>
+                <a href="sales-invoice.html" class="nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
+                    </svg>
+                    <span>Sales Tax Invoice</span>
+                </a>
+                <a href="ar.html" class="nav-link">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z">
+                        </path>
+                    </svg>
+                    <span>CRM</span>
+                </a>
+                <div class="nav-item-group">
+                    <a href="inventory.html" class="nav-link">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                        </svg>
+                        <span>Inventory</span>
+                    </a>
+                    <div class="sub-menu">
+                        <a href="inventory.html" class="nav-sub-link">List Product</a>
+                        <a href="add-product.html" class="nav-sub-link">Add Product</a>
+                        <a href="category.html" class="nav-sub-link">Category</a>
+                        <a href="barcode.html" class="nav-sub-link">Barcodes</a>
+                    </div>
+                </div>
+                <a href="payroll.html" class="nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                        <circle cx="8.5" cy="7" r="4" />
+                        <polyline points="17 11 19 13 23 9" />
+                    </svg>
+                    <span>Payroll</span>
+                </a>
+
+                <a href="settings.html" class="nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <span>Settings</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer mobile-only">
+                <div class="shift-section">
+                    <span class="shift-label">Shift</span>
+                    <div class="shift-user">
+                        <div class="user-avatar-sm" id="sidebarAvatar">AD</div>
+                        <span class="user-name-sm" id="sidebarCashierName">Admin User</span>
+                    </div>
+                </div>
+                <div class="sidebar-copyright">
+                    <p>Â© 2026 K Pos App</p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="top-bar">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <button class="menu-toggle mobile-only" onclick="toggleSidebar()"
+                        style="background: none; border: none; color: var(--text-primary); cursor: pointer; padding: 0.5rem; display: flex; align-items: center; justify-content: center;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </button>
+                    <h1 class="logo-text">K Pos</h1>
+                </div>
+                <div style="display: flex; align-items: center; gap: 1.5rem;">
+                    <div style="position: relative;" id="notificationContainer">
+                        <div style="cursor: pointer;" onclick="toggleNotificationPanel()" title="Notifications">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" style="color: var(--text-secondary);">
+                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                            </svg>
+                            <div id="notificationDot"
+                                style="display: none; position: absolute; top: -2px; right: -2px; width: 8px; height: 8px; background: #ef4444; border-radius: 50%; border: 2px solid var(--bg-secondary);">
+                            </div>
+                        </div>
+
+                        <div id="notificationPanel" class="notification-panel">
+                            <div class="notification-header">
+                                <span>Notifications</span>
+                                <button onclick="clearNotifications()"
+                                    style="background: none; border: none; font-size: 0.7rem; color: var(--accent-primary); cursor: pointer;">Clear
+                                    All</button>
+                            </div>
+                            <div id="notificationList" class="notification-list">
+                                <div
+                                    style="padding: 1rem; text-align: center; color: var(--text-muted); font-size: 0.8rem;">
+                                    No new notifications</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="user-profile" onclick="openCashierModal()" style="cursor: pointer;">
+                        <span id="cashierName">Admin User</span>
+                        <div class="user-avatar" id="cashierAvatar">AD</div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="content-area">
+                <div class="tabs">
+                    <button class="tab-btn active" onclick="switchTab('daily', event)">Daily Sales Report</button>
+                    <button class="tab-btn" onclick="switchTab('monthly', event)">Monthly Sales Report</button>
+                    <button class="tab-btn" onclick="switchTab('fiscal', event)">Fiscal Year Report</button>
+                    <button class="tab-btn" onclick="switchTab('returns', event)">Returns Report</button>
+                    <button class="tab-btn" onclick="switchTab('tax', event)">Tax Report</button>
+                    <button class="tab-btn" onclick="switchTab('stock', event)">Stock Report</button>
+                    <button class="tab-btn" onclick="switchTab('profit', event)">Profit Report</button>
+                    <button class="tab-btn" onclick="switchTab('audit', event)">Audit Log</button>
+                    <button class="tab-btn" onclick="switchTab('salesRegister', event)">VAT Sales Register</button>
+                    <button class="tab-btn" onclick="switchTab('purchase', event)">VAT Purchase Register</button>
+                    <button class="tab-btn" onclick="switchTab('creditNote', event)">Credit Note</button>
+                    <button class="tab-btn" onclick="switchTab('debitNote', event)">Debit Note</button>
+                </div>
+
+                <div id="printArea">
+                    <!-- Daily Sales Tab -->
+                    <div id="daily" class="tab-content active">
+                        <div class="report-header">
+                            <div class="store-info">
+                                <div class="store-name" id="pd-storeName"></div>
+                                <div id="pd-address"></div>
+                                <div id="pd-vat"></div>
+                            </div>
+                            <h1>Daily Sales Report</h1>
+                            <p id="dailyPrintInfo"></p>
+                        </div>
+
+                        <div class="filter-bar no-print">
+                            <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                                <label class="form-label">Report Date</label>
+                                <div class="date-range-filter" style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <button id="filterRangeBtn" onclick="openRangePicker()"
+                                        style="display: flex; align-items: center; gap: 0.5rem; padding: 0.55rem 1rem; background: var(--bg-secondary); border: 1px solid var(--border-light); border-radius: 0.6rem; cursor: pointer; color: var(--text-primary); font-size: 0.875rem; white-space: nowrap; min-width: 220px;">
+                                        <svg style="width: 16px; height: 16px; flex-shrink: 0; color: var(--text-muted);"
+                                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                            <line x1="16" y1="2" x2="16" y2="6"></line>
+                                            <line x1="8" y1="2" x2="8" y2="6"></line>
+                                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                                        </svg>
+                                        <span id="filterRangeLabel" style="flex: 1; text-align: left;">Select Date
+                                            Range</span>
+                                    </button>
+                                    <button id="filterClearBtn" onclick="clearFilterRange()" title="Clear date filter"
+                                        style="display: none; padding: 0.55rem 0.65rem; background: var(--bg-secondary); border: 1px solid var(--border-light); border-radius: 0.6rem; cursor: pointer; color: var(--text-muted); font-size: 1rem; line-height: 1;">&times;</button>
+                                    <input type="hidden" id="dailyStartDate">
+                                    <input type="hidden" id="dailyEndDate">
+                                </div>
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 0.25rem; flex: 1;">
+                                <label class="form-label">Search</label>
+                                <input type="text" id="dailySearch" class="form-input"
+                                    placeholder="Search by Bill Number or Customer Name...">
+                            </div>
+                            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                                <button class="btn btn-secondary" onclick="printReport('daily')">Print Report</button>
+                                <button class="btn btn-secondary" onclick="exportPDF('daily')">Export PDF</button>
+                                <button class="btn btn-secondary" onclick="exportExcel('daily')">Export Excel</button>
+                            </div>
+                        </div>
+
+                        <div class="table-container">
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr>
+                                        <th>Bill Number</th>
+                                        <th>Time</th>
+                                        <th>Customer Name</th>
+                                        <th style="text-align: center;">Number of Items</th>
+                                        <th style="text-align: right;">Total Amount</th>
+                                        <th style="text-align: center;">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="dailyTbody">
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="summary-totals">
+                            <div class="summary-stat">
+                                <span class="label">Total Bills</span>
+                                <span class="value" id="dailyTotalBills">0</span>
+                            </div>
+                            <div class="summary-stat">
+                                <span class="label">Total Sales Amount</span>
+                                <span class="value" style="color: var(--accent-success);" id="dailyTotalAmount">Rs.
+                                    0.00</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Monthly Sales Tab -->
+                    <div id="monthly" class="tab-content">
+                        <div class="report-header">
+                            <div class="store-info">
+                                <div class="store-name" id="pm-storeName"></div>
+                                <div id="pm-address"></div>
+                                <div id="pm-vat"></div>
+                            </div>
+                            <h1>Monthly Sales Report</h1>
+                            <p id="monthlyPrintInfo"></p>
+                        </div>
+
+                        <div class="filter-bar no-print">
+                            <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                                <label class="form-label">Month</label>
+                                <select id="monthlyMonth" class="form-input" style="min-width: 10rem;">
+                                    <option value="0">Baishakh</option>
+                                    <option value="1">Jestha</option>
+                                    <option value="2">Ashadh</option>
+                                    <option value="3">Shrawan</option>
+                                    <option value="4">Bhadra</option>
+                                    <option value="5">Ashwin</option>
+                                    <option value="6">Kartik</option>
+                                    <option value="7">Mangsir</option>
+                                    <option value="8">Poush</option>
+                                    <option value="9">Magh</option>
+                                    <option value="10">Falgun</option>
+                                    <option value="11">Chaitra</option>
+                                </select>
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                                <label class="form-label">Year</label>
+                                <select id="monthlyYear" class="form-input" style="min-width: 8rem;">
+                                    <!-- Populated in JS -->
+                                </select>
+                            </div>
+                            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                                <button class="btn btn-secondary" onclick="printReport('monthly')">Print Report</button>
+                                <button class="btn btn-secondary" onclick="exportPDF('monthly')">Export PDF</button>
+                                <button class="btn btn-secondary" onclick="exportExcel('monthly')">Export Excel</button>
+                            </div>
+                        </div>
+
+                        <div class="table-container">
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th style="text-align: center;">Number of Bills</th>
+                                        <th style="text-align: right;">Total Sales Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="monthlyTbody">
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="summary-totals" style="justify-content: flex-end;">
+                            <div class="summary-stat">
+                                <span class="label">Grand Total Sales Amount</span>
+                                <span class="value" style="color: var(--accent-success);" id="monthlyGrandTotal">Rs.
+                                    0.00</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Fiscal Year Sales Tab -->
+                    <div id="fiscal" class="tab-content">
+                        <div class="report-header">
+                            <div class="store-info">
+                                <div class="store-name" id="pf-storeName"></div>
+                                <div id="pf-address"></div>
+                                <div id="pf-vat"></div>
+                            </div>
+                            <h1>Fiscal Year Report (Nepal)</h1>
+                            <p id="fiscalPrintInfo"></p>
+                        </div>
+
+                        <div class="filter-bar no-print">
+                            <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                                <label class="form-label">Fiscal Year</label>
+                                <select id="fiscalYearSelect" class="form-input" style="min-width: 10rem;">
+                                    <!-- Populated in JS via reports.js -->
+                                </select>
+                            </div>
+                            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                                <button class="btn btn-secondary" onclick="printReport('fiscal')">Print Report</button>
+                                <button class="btn btn-secondary" onclick="exportPDF('fiscal')">Export PDF</button>
+                                <button class="btn btn-secondary" onclick="exportExcel('fiscal')">Export Excel</button>
+                            </div>
+                        </div>
+
+                        <div class="table-container">
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr>
+                                        <th>Month</th>
+                                        <th style="text-align: right;">Total Sales Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="fiscalTbody">
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="summary-totals" style="justify-content: flex-end;">
+                            <div class="summary-stat">
+                                <span class="label">Total Fiscal Sales</span>
+                                <span class="value" style="color: var(--accent-success);" id="fiscalGrandTotal">Rs.
+                                    0.00</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Returns Report Tab -->
+                    <div id="returns" class="tab-content">
+                        <div class="report-header">
+                            <div class="store-info">
+                                <div class="store-name" id="pr-storeName"></div>
+                                <div id="pr-address"></div>
+                                <div id="pr-vat"></div>
+                            </div>
+                            <h1>Returns & Credit Notes Report</h1>
+                            <p id="returnsPrintInfo"></p>
+                        </div>
+
+                        <div class="filter-bar no-print">
+                            <div style="display: flex; flex-direction: column; gap: 0.25rem; flex: 1;">
+                                <label class="form-label">Search</label>
+                                <input type="text" id="returnsSearch" class="form-input"
+                                    placeholder="Search by CN Number or Bill...">
+                            </div>
+                            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                                <button class="btn btn-secondary" onclick="printReport('returns')">Print Report</button>
+                                <button class="btn btn-secondary" onclick="exportPDF('returns')">Export PDF</button>
+                                <button class="btn btn-secondary" onclick="exportExcel('returns')">Export Excel</button>
+                            </div>
+                        </div>
+
+                        <div class="table-container">
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr>
+                                        <th>CN Number</th>
+                                        <th>Date & Time</th>
+                                        <th>Original Bill</th>
+                                        <th>Customer PAN</th>
+                                        <th style="text-align: right;">Amount</th>
+                                        <th>Reason</th>
+                                        <th class="no-print" style="text-align: right;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="returnsTbody">
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="summary-totals" style="justify-content: flex-end;">
+                            <div class="summary-stat">
+                                <span class="label">Total Returns Amount</span>
+                                <span class="value" style="color: var(--accent-danger);" id="returnsGrandTotal">Rs.
+                                    0.00</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tax Report Tab -->
+                    <div id="tax" class="tab-content">
+                        <div class="report-header">
+                            <div class="store-info">
+                                <div class="store-name" id="pt-storeName"></div>
+                                <div id="pt-address"></div>
+                                <div id="pt-vat"></div>
+                            </div>
+                            <h1>Tax Report</h1>
+                            <p id="taxPrintInfo"></p>
+                        </div>
+
+                        <div class="filter-bar no-print">
+                            <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                                <label class="form-label">Start Date</label>
+                                <input type="date" id="taxStartDate" class="form-input" style="min-width: 12rem;">
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                                <label class="form-label">End Date</label>
+                                <input type="date" id="taxEndDate" class="form-input" style="min-width: 12rem;">
+                            </div>
+                            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                                <button class="btn btn-secondary" onclick="printReport('tax')">Print Report</button>
+                                <button class="btn btn-secondary" onclick="exportPDF('tax')">Export PDF</button>
+                                <button class="btn btn-secondary" onclick="exportExcel('tax')">Export Excel</button>
+                            </div>
+                        </div>
+
+                        <div class="table-container">
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr>
+                                        <th>Period</th>
+                                        <th style="text-align: right;">Total Sales</th>
+                                        <th style="text-align: right;">Taxable Amount</th>
+                                        <th style="text-align: right;">VAT Amount (0%)</th>
+                                        <th style="text-align: right;">Grand Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="taxTbody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Stock Report Tab -->
+                    <div id="stock" class="tab-content">
+                        <div class="report-header">
+                            <div class="store-info">
+                                <div class="store-name" id="ps-storeName"></div>
+                                <div id="ps-address"></div>
+                                <div id="ps-vat"></div>
+                            </div>
+                            <h1>Stock Report </h1>
+                            <p id="stockPrintInfo"></p>
+                        </div>
+
+                        <div class="filter-bar no-print">
+                            <div style="display: flex; flex-direction: column; gap: 0.25rem; flex: 1;">
+                                <label class="form-label">Search Product</label>
+                                <input type="text" id="stockSearch" class="form-input"
+                                    placeholder="Search by product name..." oninput="loadStockReport()">
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                                <label class="form-label">Status Filter</label>
+                                <select id="stockStatusFilter" class="form-input" style="min-width: 10rem;"
+                                    onchange="loadStockReport()">
+                                    <option value="all">All</option>
+                                    <option value="ok">OK</option>
+                                    <option value="low">Low Stock</option>
+                                    <option value="out">Out of Stock</option>
+                                </select>
+                            </div>
+                            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                                <button class="btn btn-secondary" onclick="printReport('stock')">Print Report</button>
+                                <button class="btn btn-secondary" onclick="exportPDF('stock')">Export PDF</button>
+                                <button class="btn btn-secondary" onclick="exportExcel('stock')">Export Excel</button>
+                            </div>
+                        </div>
+
+                        <div class="table-container">
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr>
+                                        <th>Product Name</th>
+                                        <th>SKU</th>
+                                        <th style="text-align: right;">Opening Stock</th>
+                                        <th style="text-align: right;">Sold Qty</th>
+                                        <th style="text-align: right;">Current Stock</th>
+                                        <th style="text-align: center;">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="stockTbody">
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="summary-totals">
+                            <div class="summary-stat">
+                                <span class="label">Total Products</span>
+                                <span class="value" id="stockTotalProducts">0</span>
+                            </div>
+                            <div class="summary-stat">
+                                <span class="label">Low Stock Items</span>
+                                <span class="value" style="color: #f59e0b;" id="stockLowCount">0</span>
+                            </div>
+                            <div class="summary-stat">
+                                <span class="label">Out of Stock Items</span>
+                                <span class="value" style="color: #ef4444;" id="stockOutCount">0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Profit Report Tab -->
+                    <div id="profit" class="tab-content">
+                        <div class="report-header">
+                            <div class="store-info">
+                                <div class="store-name" id="pp-storeName"></div>
+                                <div id="pp-address"></div>
+                                <div id="pp-vat"></div>
+                            </div>
+                            <h1>Profit Report</h1>
+                            <p id="profitPrintInfo"></p>
+                        </div>
+
+                        <div class="filter-bar no-print">
+                            <div style="display: flex; flex-direction: column; gap: 0.25rem; flex: 1;">
+                                <label class="form-label">Search Product</label>
+                                <input type="text" id="profitSearch" class="form-input"
+                                    placeholder="Search by product name..." oninput="loadProfitReport()">
+                            </div>
+                            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                                <button class="btn btn-secondary" onclick="printReport('profit')">Print Report</button>
+                                <button class="btn btn-secondary" onclick="exportPDF('profit')">Export PDF</button>
+                                <button class="btn btn-secondary" onclick="exportExcel('profit')">Export Excel</button>
+                            </div>
+                        </div>
+
+                        <div class="table-container">
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr>
+                                        <th>Product Name</th>
+                                        <th style="text-align: right;">Sold</th>
+                                        <th style="text-align: right;">Cost</th>
+                                        <th style="text-align: right;">Selling</th>
+                                        <th style="text-align: right;">Profit</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="profitTbody">
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="summary-totals" style="justify-content: flex-end;">
+                            <div class="summary-stat">
+                                <span class="label">Total Profit</span>
+                                <span class="value" style="color: var(--accent-success);" id="profitGrandTotal">Rs.
+                                    0.00</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Audit Log Report Tab -->
+                    <div id="audit" class="tab-content">
+                        <div class="report-header">
+                            <div class="store-info">
+                                <div class="store-name" id="pa-storeName"></div>
+                                <div id="pa-address"></div>
+                                <div id="pa-vat"></div>
+                            </div>
+                            <h1>Audit Log Report</h1>
+                            <p id="auditPrintInfo"></p>
+                        </div>
+
+                        <div class="filter-bar no-print">
+                            <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                                <label class="form-label">Date</label>
+                                <input type="date" id="auditDate" class="form-input" style="min-width: 12rem;"
+                                    onchange="loadAuditReport()">
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                                <label class="form-label">User</label>
+                                <select id="auditUserFilter" class="form-input" style="min-width: 10rem;"
+                                    onchange="loadAuditReport()">
+                                    <option value="all">All Users</option>
+                                </select>
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 0.25rem; flex: 1;">
+                                <label class="form-label">Search Action</label>
+                                <input type="text" id="auditSearch" class="form-input" placeholder="Search by action..."
+                                    oninput="loadAuditReport()">
+                            </div>
+                            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                                <button class="btn btn-secondary" onclick="printReport('audit')">Print Report</button>
+                                <button class="btn btn-secondary" onclick="exportPDF('audit')">Export PDF</button>
+                                <button class="btn btn-secondary" onclick="exportExcel('audit')">Export Excel</button>
+                            </div>
+                        </div>
+
+                        <div class="table-container">
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr>
+                                        <th>User</th>
+                                        <th>Action</th>
+                                        <th>Module</th>
+                                        <th>Reference ID</th>
+                                        <th>Date</th>
+                                        <th>Time</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="auditTbody">
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="summary-totals">
+                            <div class="summary-stat">
+                                <span class="label">Total Log Entries</span>
+                                <span class="value" id="auditTotalEntries">0</span>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <!-- VAT Sales Register Report Tab -->
+                    <div id="salesRegister" class="tab-content">
+                        <div id="vatSalesFilterCard" class="card"
+                            style="max-width: 600px; margin: 2rem auto; padding: 1.5rem; background: var(--bg-secondary); border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 1px solid var(--border-light);">
+                            <div
+                                style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-light); padding-bottom: 1rem; margin-bottom: 1rem;">
+                                <h2 style="margin: 0; font-size: 1.25rem;">VAT Sales Register Report</h2>
+                            </div>
+
+                            <div style="margin-bottom: 1rem;">
+                                <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">Date
+                                    Range Selection :</label>
+                                <div
+                                    style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.5rem;">
+                                    <div>
+                                        <label class="form-label" style="font-size: 0.8rem;">From: (AD)</label>
+                                        <input type="date" id="salesRegisterStartDate" class="form-input">
+                                    </div>
+                                    <div>
+                                        <label class="form-label" style="font-size: 0.8rem;">To: (AD)</label>
+                                        <input type="date" id="salesRegisterEndDate" class="form-input">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="margin-bottom: 1rem;">
+                                <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">Division
+                                    Selection:</label>
+                                <select id="vatSalesDivision" class="form-input" style="margin-top: 0.5rem;">
+                                    <option value="DEMO">DEMO</option>
+                                </select>
+                            </div>
+
+                            <div style="margin-bottom: 1rem;">
+                                <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">Buyer
+                                    Selection :</label>
+                                <input type="text" id="salesRegisterSearch" class="form-input"
+                                    placeholder="Search by invoice no, buyer name, or buyer PAN"
+                                    style="margin-top: 0.5rem;" autocomplete="off">
+                            </div>
+
+                            <div
+                                style="display: flex; justify-content: flex-end; gap: 0.5rem; border-top: 1px solid var(--border-light); padding-top: 1rem;">
+                                <button class="btn btn-primary" onclick="runVatSalesReport()"
+                                    style="background: #17a2b8; border-color: #17a2b8; min-width: 80px;">RUN</button>
+                                <button class="btn btn-secondary" onclick="switchTab('daily', event)"
+                                    style="background: #17a2b8; border-color: #17a2b8; color: white; min-width: 80px;">Close</button>
+                            </div>
+                        </div>
+
+                        <div id="vatSalesReportView" style="display: none;">
+                            <div class="report-header" style="text-align: left; margin-bottom: 0.5rem;">
+                                <h1 style="display: inline; margin: 0 1rem 0 0; font-size: 1.15rem; font-weight: 800;">
+                                    Vat Sales Register Report</h1>
+                                <span id="salesRegisterPrintInfo"
+                                    style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);"></span>
+                                <p id="salesRegisterPrintInfoPrint" class="sales-register-print-meta"
+                                    style="display: none;"></p>
+                            </div>
+
+                            <div class="filter-bar no-print"
+                                style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                                <p id="salesRegisterFilterInfo"
+                                    style="margin: 0; font-size: 0.9rem; font-weight: 500; color: var(--text-muted);">
+                                </p>
+                                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                                    <button class="btn btn-secondary"
+                                        onclick="document.getElementById('vatSalesFilterCard').style.display='block'; document.getElementById('vatSalesReportView').style.display='none';"
+                                        style="display:flex;align-items:center;gap:0.3rem;">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+                                        </svg>
+                                        Filter
+                                    </button>
+                                    <button class="btn btn-secondary" onclick="printReport('salesRegister')"
+                                        style="display:flex;align-items:center;gap:0.3rem;">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polyline points="6 9 6 2 18 2 18 9" />
+                                            <path
+                                                d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+                                            <rect x="6" y="14" width="12" height="8" />
+                                        </svg>
+                                        Print Report
+                                    </button>
+                                    <button class="btn btn-secondary" onclick="exportPDF('salesRegister')"
+                                        style="display:flex;align-items:center;gap:0.3rem;">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                            <polyline points="14 2 14 8 20 8" />
+                                        </svg>
+                                        Export PDF
+                                    </button>
+                                    <button class="btn btn-secondary" onclick="exportExcel('salesRegister')"
+                                        style="display:flex;align-items:center;gap:0.3rem;">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                            <polyline points="14 2 14 8 20 8" />
+                                            <line x1="16" y1="13" x2="8" y2="13" />
+                                            <line x1="16" y1="17" x2="8" y2="17" />
+                                            <polyline points="10 9 9 9 8 9" />
+                                        </svg>
+                                        Export Excel
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="table-container" style="margin-top: 1rem; overflow-x: auto;">
+                                <table
+                                    style="width: 100%; border-collapse: collapse; font-size: 0.78rem; min-width: 1450px;"
+                                    class="vat-table">
+                                    <thead>
+                                        <tr style="background: #7fcde5; color: #1f2937;">
+                                            <th rowspan="2"
+                                                style="border: 1px solid #9fd7e8; padding: 0.45rem; text-align: center;">
+                                                DATE</th>
+                                            <th rowspan="2"
+                                                style="border: 1px solid #9fd7e8; padding: 0.45rem; text-align: center;">
+                                                MITI</th>
+                                            <th colspan="3"
+                                                style="border: 1px solid #9fd7e8; padding: 0.45rem; text-align: center;">
+                                                INVOICE</th>
+                                            <th
+                                                style="border: 1px solid #9fd7e8; padding: 0.45rem; text-align: center;">
+                                                TOTAL SALES / IMPORT</th>
+                                            <th
+                                                style="border: 1px solid #9fd7e8; padding: 0.45rem; text-align: center;">
+                                                NON TAXABLE SALES</th>
+                                            <th colspan="2"
+                                                style="border: 1px solid #9fd7e8; padding: 0.45rem; text-align: center;">
+                                                TAXABLE SALES</th>
+                                            <th colspan="4"
+                                                style="border: 1px solid #9fd7e8; padding: 0.45rem; text-align: center;">
+                                                EXPORT SALES</th>
+                                        </tr>
+                                        <tr style="background: #aee3f2; color: #1f2937;">
+                                            <th
+                                                style="border: 1px solid #9fd7e8; padding: 0.45rem; text-align: center;">
+                                                INVOICE NO</th>
+                                            <th style="border: 1px solid #9fd7e8; padding: 0.45rem; text-align: left;">
+                                                BUYER NAME</th>
+                                            <th
+                                                style="border: 1px solid #9fd7e8; padding: 0.45rem; text-align: center;">
+                                                BUYER PAN</th>
+                                            <th style="border: 1px solid #9fd7e8; padding: 0.45rem; text-align: right;">
+                                                VALUE</th>
+                                            <th style="border: 1px solid #9fd7e8; padding: 0.45rem; text-align: right;">
+                                                VALUE</th>
+                                            <th style="border: 1px solid #9fd7e8; padding: 0.45rem; text-align: right;">
+                                                VALUE</th>
+                                            <th style="border: 1px solid #9fd7e8; padding: 0.45rem; text-align: right;">
+                                                VAT</th>
+                                            <th style="border: 1px solid #9fd7e8; padding: 0.45rem; text-align: right;">
+                                                VALUE</th>
+                                            <th
+                                                style="border: 1px solid #9fd7e8; padding: 0.45rem; text-align: center;">
+                                                COUNTRY</th>
+                                            <th
+                                                style="border: 1px solid #9fd7e8; padding: 0.45rem; text-align: center;">
+                                                EXPORT PP NO</th>
+                                            <th
+                                                style="border: 1px solid #9fd7e8; padding: 0.45rem; text-align: center;">
+                                                EXPORT PP DATE</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="salesRegisterTbody">
+                                    </tbody>
+                                    <tfoot>
+                                        <tr style="background: #aee3f2; font-weight: bold; color: #1f2937;">
+                                            <td colspan="5"
+                                                style="border: 1px solid #9fd7e8; padding: 0.45rem; text-align: right;">
+                                                TOTAL &gt;&gt;</td>
+                                            <td id="vatSalesTotalGross"
+                                                style="border: 1px solid #9fd7e8; padding: 0.45rem; text-align: right;">
+                                                0.00</td>
+                                            <td id="vatSalesTotalNonTaxable"
+                                                style="border: 1px solid #9fd7e8; padding: 0.45rem; text-align: right;">
+                                                0.00</td>
+                                            <td id="vatSalesTotalTaxable"
+                                                style="border: 1px solid #9fd7e8; padding: 0.45rem; text-align: right;">
+                                                0.00</td>
+                                            <td id="vatSalesTotalVat"
+                                                style="border: 1px solid #9fd7e8; padding: 0.45rem; text-align: right;">
+                                                0.00</td>
+                                            <td id="vatSalesTotalExport"
+                                                style="border: 1px solid #9fd7e8; padding: 0.45rem; text-align: right;">
+                                                0.00</td>
+                                            <td colspan="3" style="border: 1px solid #9fd7e8; padding: 0.45rem;"></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <!-- VAT Purchase Register Report Tab -->
+                    <div id="purchase" class="tab-content">
+                        <!-- Initial Filter Modal/Card -->
+                        <div id="vatPurchaseFilterCard" class="card"
+                            style="max-width: 600px; margin: 2rem auto; padding: 1.5rem; background: var(--bg-secondary); border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 1px solid var(--border-light);">
+                            <div
+                                style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-light); padding-bottom: 1rem; margin-bottom: 1rem;">
+                                <h2 style="margin: 0; font-size: 1.25rem;">VAT Purchase Register Report</h2>
+                            </div>
+
+                            <div style="margin-bottom: 1rem;">
+                                <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">Date
+                                    Range Selection :</label>
+                                <div
+                                    style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.5rem;">
+                                    <div>
+                                        <label class="form-label" style="font-size: 0.8rem;">From: (AD)</label>
+                                        <input type="date" id="purchaseStartDate" class="form-input">
+                                    </div>
+                                    <div>
+                                        <label class="form-label" style="font-size: 0.8rem;">To: (AD)</label>
+                                        <input type="date" id="purchaseEndDate" class="form-input">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="margin-bottom: 1rem;">
+                                <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">Division
+                                    Selection:</label>
+                                <select id="vatPurDivision" class="form-input" style="margin-top: 0.5rem;">
+                                    <option value="DEMO">DEMO</option>
+                                </select>
+                            </div>
+
+                            <div style="margin-bottom: 1rem;">
+                                <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">Supplier
+                                    Selection :</label>
+                                <input type="text" id="purchaseSearch" class="form-input"
+                                    placeholder="Press Enter or Tab for Supplier List" style="margin-top: 0.5rem;"
+                                    autocomplete="off">
+                            </div>
+
+                            <div
+                                style="margin-bottom: 1rem; border: 1px solid var(--border-light); padding: 1rem; border-radius: 4px;">
+                                <label style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                    <input type="checkbox" id="chkTrading" checked> Trading Purchase Transaction
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                    <input type="checkbox" id="chkCapital" checked> Capital Purchase Transaction
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <input type="checkbox" id="chkReturn" checked> Purchase Return (Debit Note)
+                                    Transaction
+                                </label>
+                            </div>
+
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 1.5rem;">
+                                <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem;">
+                                    <input type="checkbox" id="chkSubTotal"> Show Sub Total In Report
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem;">
+                                    <input type="checkbox" id="chkBillWise"> Show Bill Wise Summary Report
+                                </label>
+                            </div>
+
+                            <div
+                                style="display: flex; justify-content: flex-end; gap: 0.5rem; border-top: 1px solid var(--border-light); padding-top: 1rem;">
+                                <button class="btn btn-primary" onclick="runVatPurchaseReport()"
+                                    style="background: #17a2b8; border-color: #17a2b8; min-width: 80px;">RUN</button>
+                                <button class="btn btn-secondary" onclick="switchTab('daily', event)"
+                                    style="background: #17a2b8; border-color: #17a2b8; color: white; min-width: 80px;">Close</button>
+                            </div>
+                        </div>
+
+                        <!-- Report Data View (Hidden Initially) -->
+                        <div id="vatPurchaseReportView" style="display: none;">
+                            <div class="report-header">
+                                <div class="store-info" style="text-align: center;">
+                                    <div class="store-name" id="pur-storeName"></div>
+                                    <div id="pur-address"></div>
+                                    <div id="pur-vat"></div>
+                                </div>
+                                <h1 style="text-align: center; margin: 1rem 0 0.5rem 0;">Vat Purchase Register Report
+                                </h1>
+                                <p id="purchasePrintInfoPrint" class="purchase-print-meta" style="display: none;"></p>
+                            </div>
+
+                            <div class="filter-bar no-print"
+                                style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                                <p id="purchasePrintInfo"
+                                    style="margin: 0; font-size: 0.9rem; font-weight: 500; color: var(--text-muted);">
+                                </p>
+                                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                                    <button class="btn btn-secondary"
+                                        onclick="document.getElementById('vatPurchaseFilterCard').style.display='block'; document.getElementById('vatPurchaseReportView').style.display='none';"
+                                        style="display:flex;align-items:center;gap:0.3rem;">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+                                        </svg>
+                                        Filter
+                                    </button>
+                                    <button class="btn btn-secondary" onclick="printReport('purchase')"
+                                        style="display:flex;align-items:center;gap:0.3rem;">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polyline points="6 9 6 2 18 2 18 9" />
+                                            <path
+                                                d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+                                            <rect x="6" y="14" width="12" height="8" />
+                                        </svg>
+                                        Print Report
+                                    </button>
+                                    <button class="btn btn-secondary" onclick="exportPDF('purchase')"
+                                        style="display:flex;align-items:center;gap:0.3rem;">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                            <polyline points="14 2 14 8 20 8" />
+                                        </svg>
+                                        Export PDF
+                                    </button>
+                                    <button class="btn btn-secondary" onclick="exportExcel('purchase')"
+                                        style="display:flex;align-items:center;gap:0.3rem;">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                            <polyline points="14 2 14 8 20 8" />
+                                            <line x1="16" y1="13" x2="8" y2="13" />
+                                            <line x1="16" y1="17" x2="8" y2="17" />
+                                            <polyline points="10 9 9 9 8 9" />
+                                        </svg>
+                                        Export Excel
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="table-container" style="margin-top: 1rem; overflow-x: auto;">
+                                <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;"
+                                    class="vat-table">
+                                    <thead>
+                                        <tr style="background: #e0f2fe; color: #0369a1;">
+                                            <th rowspan="2" style="border: 1px solid #bae6fd; padding: 0.5rem;">MITI
+                                            </th>
+                                            <th rowspan="2" style="border: 1px solid #bae6fd; padding: 0.5rem;">INVOICE
+                                                NO</th>
+                                            <th rowspan="2" style="border: 1px solid #bae6fd; padding: 0.5rem;">PP NO
+                                            </th>
+                                            <th rowspan="2"
+                                                style="border: 1px solid #bae6fd; padding: 0.5rem; text-align: left;">
+                                                SUPPLIER NAME</th>
+                                            <th rowspan="2" style="border: 1px solid #bae6fd; padding: 0.5rem;">SUPPLIER
+                                                PAN</th>
+                                            <th
+                                                style="border: 1px solid #bae6fd; padding: 0.5rem; text-align: center; border-bottom: none;">
+                                                TOTAL PURCHASE</th>
+                                            <th
+                                                style="border: 1px solid #bae6fd; padding: 0.5rem; text-align: center; border-bottom: none;">
+                                                NON TAXABLE</th>
+                                            <th colspan="2"
+                                                style="border: 1px solid #bae6fd; padding: 0.5rem; text-align: center; border-bottom: none;">
+                                                TAXABLE PURCHASE</th>
+                                            <th colspan="2"
+                                                style="border: 1px solid #bae6fd; padding: 0.5rem; text-align: center; border-bottom: none;">
+                                                IMPORT PURCHASE</th>
+                                            <th colspan="2"
+                                                style="border: 1px solid #bae6fd; padding: 0.5rem; text-align: center; border-bottom: none;">
+                                                CAPITALIZED PURCHASE</th>
+                                        </tr>
+                                        <tr style="background: #e0f2fe; color: #0369a1;">
+                                            <th style="border: 1px solid #bae6fd; padding: 0.5rem; text-align: right;">
+                                                AMOUNT</th>
+                                            <th style="border: 1px solid #bae6fd; padding: 0.5rem; text-align: right;">
+                                                PURCHASE / IMPORT</th>
+                                            <th style="border: 1px solid #bae6fd; padding: 0.5rem; text-align: right;">
+                                                AMOUNT</th>
+                                            <th style="border: 1px solid #bae6fd; padding: 0.5rem; text-align: right;">
+                                                VAT</th>
+                                            <th style="border: 1px solid #bae6fd; padding: 0.5rem; text-align: right;">
+                                                AMOUNT</th>
+                                            <th style="border: 1px solid #bae6fd; padding: 0.5rem; text-align: right;">
+                                                VAT</th>
+                                            <th style="border: 1px solid #bae6fd; padding: 0.5rem; text-align: right;">
+                                                AMOUNT</th>
+                                            <th style="border: 1px solid #bae6fd; padding: 0.5rem; text-align: right;">
+                                                VAT</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="purchaseTbody">
+                                    </tbody>
+                                    <tfoot>
+                                        <tr style="background: #f0f9ff; font-weight: bold; color: #0369a1;">
+                                            <td colspan="5"
+                                                style="border: 1px solid #bae6fd; padding: 0.5rem; text-align: right;">
+                                                TOTAL &gt;&gt;</td>
+                                            <td id="vatPurTotalGross"
+                                                style="border: 1px solid #bae6fd; padding: 0.5rem; text-align: right;">
+                                                0.00</td>
+                                            <td id="vatPurTotalNonTaxable"
+                                                style="border: 1px solid #bae6fd; padding: 0.5rem; text-align: right;">
+                                                0.00</td>
+                                            <td id="vatPurTotalTaxable"
+                                                style="border: 1px solid #bae6fd; padding: 0.5rem; text-align: right;">
+                                                0.00</td>
+                                            <td id="vatPurTotalVat"
+                                                style="border: 1px solid #bae6fd; padding: 0.5rem; text-align: right;">
+                                                0.00</td>
+                                            <td style="border: 1px solid #bae6fd; padding: 0.5rem; text-align: right;">
+                                                0.00</td>
+                                            <td style="border: 1px solid #bae6fd; padding: 0.5rem; text-align: right;">
+                                                0.00</td>
+                                            <td style="border: 1px solid #bae6fd; padding: 0.5rem; text-align: right;">
+                                                0.00</td>
+                                            <td style="border: 1px solid #bae6fd; padding: 0.5rem; text-align: right;">
+                                                0.00</td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Credit Note (Sales Return) Tab -->
+                    <div id="creditNote" class="tab-content">
+                        <div class="cn-title-bar"
+                            style="display: flex; justify-content: space-between; align-items: center; background: #e0f2fe; padding: 0.75rem 1rem; border-radius: 0.5rem 0.5rem 0 0; border: 1px solid #bae6fd; margin-bottom: 1rem;">
+                            <span style="font-weight: 700; font-size: 1.1rem; color: #0369a1;">CREDIT NOTE (SALES
+                                RETURN) [NEW]</span>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <button class="btn btn-secondary" onclick="cnResetForm()"
+                                    style="background: #17a2b8; border-color: #17a2b8; color: white;">RESET F3</button>
+                                <button class="btn btn-primary" onclick="cnSaveCreditNote()"
+                                    style="background: #28a745; border-color: #28a745; color: white;">SAVE
+                                    [Esc]</button>
+                                <button class="btn btn-secondary" onclick="alert('View F4 Clicked')"
+                                    style="background: #17a2b8; border-color: #17a2b8; color: white;">VIEW F4</button>
+                                <button class="btn btn-secondary" onclick="switchTab('daily', event)"
+                                    style="background: #6c757d; border-color: #6c757d; color: white;">BACK</button>
+                            </div>
+                        </div>
+
+                        <!-- Header Form Grid -->
+                        <div class="cn-header-grid">
+                            <!-- Column 1 -->
+                            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                                <div class="cn-form-group">
+                                    <label for="cnBillNo">Bill No</label>
+                                    <input type="text" id="cnBillNo" class="cn-form-control" readonly
+                                        style="font-weight: bold; color: #ef4444; background: rgba(239, 68, 68, 0.05);">
+                                </div>
+                                <div class="cn-form-group">
+                                    <label>Entry Date</label>
+                                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                        <input type="date" id="cnEntryDateAD" class="cn-form-control" style="flex: 1;">
+                                        <input type="text" id="cnEntryDateBS" class="cn-form-control" style="flex: 1;"
+                                            placeholder="BS Date" readonly>
+                                    </div>
+                                </div>
+                                <div class="cn-form-group">
+                                    <label for="cnRefBillNo">Ref Bill No.</label>
+                                    <input type="text" id="cnRefBillNo" class="cn-form-control"
+                                        placeholder="Please Enter To Select Ref Bill No">
+                                </div>
+                                <div class="cn-form-group" style="margin-top: auto;">
+                                    <div class="cn-checkbox-wrapper">
+                                        <input type="checkbox" id="cnDoFullReturn" checked>
+                                        <label for="cnDoFullReturn">Do Full Return</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Column 2 -->
+                            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                                <div class="cn-form-group">
+                                    <label for="cnReturnMode">Return Mode</label>
+                                    <select id="cnReturnMode" class="cn-form-control">
+                                        <option value="Credit">Credit</option>
+                                        <option value="Cash">Cash</option>
+                                        <option value="Bank">Bank</option>
+                                    </select>
+                                </div>
+                                <div class="cn-form-group">
+                                    <label for="cnAccount">Account</label>
+                                    <input type="text" id="cnAccount" class="cn-form-control" value="Sales Account"
+                                        placeholder="Press Enter to Select Account">
+                                </div>
+                                <div class="cn-form-group">
+                                    <label for="cnWarehouse">Warehouse</label>
+                                    <select id="cnWarehouse" class="cn-form-control">
+                                        <option value="Main Warehouse">Main Warehouse</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Column 3 -->
+                            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                                <div class="cn-form-group cn-autocomplete-wrapper">
+                                    <label for="cnCustomer">Customer</label>
+                                    <input type="text" id="cnCustomer" class="cn-form-control"
+                                        placeholder="Press ENTER to Select Customer" autocomplete="off">
+                                    <div id="cnCustomerSuggestions" class="cn-autocomplete-suggestions"
+                                        style="display: none;"></div>
+                                </div>
+                                <div class="cn-form-group">
+                                    <label for="cnAddress">Address</label>
+                                    <input type="text" id="cnAddress" class="cn-form-control"
+                                        placeholder="Customer Address">
+                                </div>
+                                <div class="cn-form-group">
+                                    <label for="cnVatNo">VATNO</label>
+                                    <input type="text" id="cnVatNo" class="cn-form-control"
+                                        placeholder="Customer VAT/PAN No (9 digits)" maxlength="9" inputmode="numeric"
+                                        oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 9)">
+                                </div>
+                                <div class="cn-form-group">
+                                    <label for="cnRemarks">Remarks</label>
+                                    <input type="text" id="cnRemarks" class="cn-form-control"
+                                        placeholder="Remarks / Reason for Return">
+                                </div>
+                                <div class="cn-form-group">
+                                    <div style="display: flex; gap: 0.5rem;">
+                                        <div style="flex: 1;">
+                                            <label for="cnFlatDisPct"
+                                                style="font-size: 0.7rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Flat
+                                                Dis(%)</label>
+                                            <input type="number" id="cnFlatDisPct" class="cn-form-control" value="0.00"
+                                                min="0" max="100" step="any">
+                                        </div>
+                                        <div style="flex: 1;">
+                                            <label for="cnFlatDisAmt"
+                                                style="font-size: 0.7rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Flat
+                                                Dis(Rs.)</label>
+                                            <input type="number" id="cnFlatDisAmt" class="cn-form-control" value="0.00"
+                                                min="0" step="any">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quick Bar -->
+                        <div class="cn-quick-bar">
+                            <div class="cn-form-group cn-medium">
+                                <label for="cnItemBarcode">BarCode</label>
+                                <input type="text" id="cnItemBarcode" class="cn-form-control"
+                                    placeholder="Enter Barcode" onkeydown="cnHandleBarcodeScan(event)">
+                            </div>
+                            <div class="cn-form-group cn-autocomplete-wrapper">
+                                <label for="cnItemName">Description</label>
+                                <input type="text" id="cnItemName" class="cn-form-control"
+                                    placeholder="Description / Product Name" autocomplete="off">
+                                <div id="cnItemSuggestions" class="cn-autocomplete-suggestions" style="display: none;">
+                                </div>
+                            </div>
+                            <div class="cn-form-group cn-small">
+                                <label for="cnItemQty">Quantity</label>
+                                <input type="number" id="cnItemQty" class="cn-form-control" value="1" min="0.001"
+                                    step="any" onkeydown="if(event.key==='Enter') cnQuickAddItem()">
+                            </div>
+                            <div class="cn-form-group cn-small">
+                                <label for="cnItemRate">Rate</label>
+                                <input type="number" id="cnItemRate" class="cn-form-control" value="0.00" min="0"
+                                    step="any" onkeydown="if(event.key==='Enter') cnQuickAddItem()">
+                            </div>
+                            <div class="cn-form-group cn-small">
+                                <label for="cnItemStock">Stock</label>
+                                <input type="number" id="cnItemStock" class="cn-form-control" value="0" readonly
+                                    disabled style="background: rgba(var(--accent-primary-rgb), 0.05);">
+                            </div>
+                            <div class="cn-form-group" style="flex: 0 0 100px; min-width: 100px;">
+                                <button class="btn btn-primary" onclick="cnQuickAddItem()"
+                                    style="width: 100%; padding: 0.4rem; background: var(--accent-primary); border-color: var(--accent-primary); font-size: 0.85rem;">Add
+                                    Item</button>
+                            </div>
+                        </div>
+
+                        <!-- Grid Table -->
+                        <div class="cn-grid-container">
+                            <table class="cn-grid">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 40px; text-align: center;">S.No.</th>
+                                        <th style="width: 150px;">Barcode</th>
+                                        <th>Description</th>
+                                        <th style="width: 80px;">Unit</th>
+                                        <th style="width: 80px;">Quantity</th>
+                                        <th style="width: 100px;">Rate</th>
+                                        <th style="width: 100px;">Amt</th>
+                                        <th style="width: 80px;">Ind. Disc</th>
+                                        <th style="width: 100px;">Total Disc</th>
+                                        <th style="width: 85px;">VAT</th>
+                                        <th style="width: 100px;">Net Amt</th>
+                                        <th style="width: 120px;">Exp Date</th>
+                                        <th style="width: 50px; text-align: center;">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="cnGridBody">
+                                    <!-- Dynamically populated rows -->
+                                </tbody>
+                            </table>
+                            <div class="cn-grid-actions">
+                                <button class="btn btn-secondary" onclick="cnAddNewGridRow()"
+                                    style="display: flex; align-items: center; gap: 0.35rem; font-size: 0.8rem; padding: 0.35rem 0.75rem; background: #e0f2fe; border-color: #bae6fd; color: #0369a1;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none"
+                                        viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                                    </svg>
+                                    Add New Row
+                                </button>
+                                <span id="cnGridRowsCount"
+                                    style="font-size: 0.85rem; color: var(--text-muted); font-weight: 500;">0 items in
+                                    list</span>
+                            </div>
+                        </div>
+
+                        <!-- Footer Totals -->
+                        <div class="summary-totals"
+                            style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1.25rem; background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 0.75rem; box-shadow: var(--shadow-sm); flex-wrap: wrap; gap: 1rem;">
+                            <div class="summary-stat" style="min-width: auto; flex: 1; text-align: center;">
+                                <span class="label" style="font-size: 0.7rem;">Total Qty</span>
+                                <span class="value" id="cnTotalQty"
+                                    style="font-size: 1.2rem; color: var(--text-primary);">0.000</span>
+                            </div>
+                            <div class="summary-stat" style="min-width: auto; flex: 1; text-align: center;">
+                                <span class="label" style="font-size: 0.7rem;">Gross</span>
+                                <span class="value" id="cnGrossTotal"
+                                    style="font-size: 1.2rem; color: var(--text-primary);">0.00</span>
+                            </div>
+                            <div class="summary-stat" style="min-width: auto; flex: 1; text-align: center;">
+                                <span class="label" style="font-size: 0.7rem;">Discount</span>
+                                <span class="value" id="cnTotalDiscount"
+                                    style="font-size: 1.2rem; color: var(--text-primary);">0.00</span>
+                            </div>
+                            <div class="summary-stat" style="min-width: auto; flex: 1; text-align: center;">
+                                <span class="label" style="font-size: 0.7rem;">Taxable</span>
+                                <span class="value" id="cnTaxableAmount"
+                                    style="font-size: 1.2rem; color: var(--text-primary);">0.00</span>
+                            </div>
+                            <div class="summary-stat" style="min-width: auto; flex: 1; text-align: center;">
+                                <span class="label" style="font-size: 0.7rem;">Non Taxable</span>
+                                <span class="value" id="cnNonTaxableAmount"
+                                    style="font-size: 1.2rem; color: var(--text-primary);">0.00</span>
+                            </div>
+                            <div class="summary-stat" style="min-width: auto; flex: 1; text-align: center;">
+                                <span class="label" style="font-size: 0.7rem;">VAT</span>
+                                <span class="value" id="cnVatTotal"
+                                    style="font-size: 1.2rem; color: var(--text-primary);">0.00</span>
+                            </div>
+                            <div class="summary-stat"
+                                style="min-width: auto; flex: 1; text-align: center; border-left: 2px solid var(--border-light); padding-left: 1rem;">
+                                <span class="label" style="font-size: 0.7rem; color: var(--accent-primary);">Net
+                                    Amount</span>
+                                <span class="value" id="cnNetAmount"
+                                    style="font-size: 1.4rem; color: var(--accent-primary); font-weight: 800;">0.00</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Debit Note (Purchase Return) Tab -->
+                    <div id="debitNote" class="tab-content">
+                        <div class="cn-title-bar"
+                            style="display: flex; justify-content: space-between; align-items: center; background: #e0f2fe; padding: 0.75rem 1rem; border-radius: 0.5rem 0.5rem 0 0; border: 1px solid #bae6fd; margin-bottom: 1rem;">
+                            <span style="font-weight: 700; font-size: 1.1rem; color: #0369a1;">DEBIT NOTE (PURCHASE
+                                RETURN) [NEW]</span>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <button class="btn btn-secondary" onclick="dnFilterRefNo()"
+                                    style="background: #17a2b8; border-color: #17a2b8; color: white;">Filter Ref
+                                    No</button>
+                                <button class="btn btn-secondary" onclick="dnResetForm()"
+                                    style="background: #17a2b8; border-color: #17a2b8; color: white;">RESET F3</button>
+                                <button class="btn btn-primary" onclick="dnSaveDebitNote()"
+                                    style="background: #28a745; border-color: #28a745; color: white;">SAVE
+                                    [Esc]</button>
+                                <button class="btn btn-secondary" onclick="alert('Edit F7 Clicked')"
+                                    style="background: #17a2b8; border-color: #17a2b8; color: white;">EDIT F7</button>
+                                <button class="btn btn-secondary" onclick="alert('View F4 Clicked')"
+                                    style="background: #17a2b8; border-color: #17a2b8; color: white;">VIEW F4</button>
+                                <button class="btn btn-secondary" onclick="switchTab('daily', event)"
+                                    style="background: #6c757d; border-color: #6c757d; color: white;">BACK</button>
+                            </div>
+                        </div>
+
+                        <!-- Header Form Grid -->
+                        <div class="cn-header-grid">
+                            <!-- Column 1 -->
+                            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                                <div class="cn-form-group">
+                                    <label for="dnBillNo">Return No.</label>
+                                    <input type="text" id="dnBillNo" class="cn-form-control" readonly
+                                        style="font-weight: bold; color: #ef4444; background: rgba(239, 68, 68, 0.05);">
+                                </div>
+                                <div class="cn-form-group">
+                                    <label>Entry Date</label>
+                                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                        <input type="date" id="dnEntryDateAD" class="cn-form-control" style="flex: 1;">
+                                        <input type="text" id="dnEntryDateBS" class="cn-form-control" style="flex: 1;"
+                                            placeholder="BS Date" readonly>
+                                    </div>
+                                </div>
+                                <div class="cn-form-group">
+                                    <label for="dnRefPINo">Ref PI No:</label>
+                                    <input type="text" id="dnRefPINo" class="cn-form-control"
+                                        placeholder="Please Enter to Select Ref PI No">
+                                </div>
+                                <div class="cn-form-group">
+                                    <label for="dnSupplierBillNo">Supplier's Bill No</label>
+                                    <input type="text" id="dnSupplierBillNo" class="cn-form-control"
+                                        placeholder="Enter Supplier's Bill No">
+                                </div>
+                                <div class="cn-form-group">
+                                    <label for="dnPurchaseType">Purchase Type</label>
+                                    <select id="dnPurchaseType" class="cn-form-control">
+                                        <option value="Trading">Trading</option>
+                                        <option value="Capital">Capital</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Column 2 -->
+                            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                                <div class="cn-form-group">
+                                    <label for="dnReturnMode">Return Mode</label>
+                                    <select id="dnReturnMode" class="cn-form-control">
+                                        <option value="Credit">Credit</option>
+                                        <option value="Cash">Cash</option>
+                                        <option value="Bank">Bank</option>
+                                    </select>
+                                </div>
+                                <div class="cn-form-group">
+                                    <label for="dnAccount">Account</label>
+                                    <input type="text" id="dnAccount" class="cn-form-control" value="Purchase Account"
+                                        placeholder="Press Enter to Select Account">
+                                </div>
+                                <div class="cn-form-group">
+                                    <label>Cheque No & Date</label>
+                                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                        <input type="text" id="dnChequeNo" class="cn-form-control" style="flex: 1;"
+                                            placeholder="Cheque No">
+                                        <input type="date" id="dnChequeDate" class="cn-form-control" style="flex: 1;">
+                                    </div>
+                                </div>
+                                <div class="cn-form-group">
+                                    <label for="dnGodown">Godown</label>
+                                    <select id="dnGodown" class="cn-form-control">
+                                        <option value="Main Warehouse">Main Warehouse</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Column 3 -->
+                            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                                <div class="cn-form-group cn-autocomplete-wrapper">
+                                    <label for="dnSupplier">Supplier</label>
+                                    <input type="text" id="dnSupplier" class="cn-form-control"
+                                        placeholder="Press ENTER or TAB to select Supplier" autocomplete="off">
+                                    <div id="dnSupplierSuggestions" class="cn-autocomplete-suggestions"
+                                        style="display: none;"></div>
+                                </div>
+                                <div class="cn-form-group">
+                                    <label for="dnAddress">Address</label>
+                                    <input type="text" id="dnAddress" class="cn-form-control"
+                                        placeholder="Supplier Address">
+                                </div>
+                                <div class="cn-form-group">
+                                    <label for="dnVatNo">VATNO</label>
+                                    <input type="text" id="dnVatNo" class="cn-form-control"
+                                        placeholder="Supplier VAT/PAN No (9 digits)" maxlength="9" inputmode="numeric"
+                                        oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 9)">
+                                </div>
+                                <div class="cn-form-group">
+                                    <label for="dnRemarks">Remarks</label>
+                                    <input type="text" id="dnRemarks" class="cn-form-control"
+                                        placeholder="Remarks / Reason for Return">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quick Bar -->
+                        <div class="cn-quick-bar">
+                            <div class="cn-form-group cn-medium">
+                                <label for="dnItemBarcode">BarCode</label>
+                                <input type="text" id="dnItemBarcode" class="cn-form-control"
+                                    placeholder="Enter Barcode" onkeydown="dnHandleBarcodeScan(event)">
+                            </div>
+                            <div class="cn-form-group cn-autocomplete-wrapper">
+                                <label for="dnItemName">Description</label>
+                                <input type="text" id="dnItemName" class="cn-form-control"
+                                    placeholder="Description / Product Name" autocomplete="off">
+                                <div id="dnItemSuggestions" class="cn-autocomplete-suggestions" style="display: none;">
+                                </div>
+                            </div>
+                            <div class="cn-form-group cn-small">
+                                <label for="dnItemQty">Quantity</label>
+                                <input type="number" id="dnItemQty" class="cn-form-control" value="1" min="0.001"
+                                    step="any" onkeydown="if(event.key==='Enter') dnQuickAddItem()">
+                            </div>
+                            <div class="cn-form-group cn-small">
+                                <label for="dnItemRate">Rate</label>
+                                <input type="number" id="dnItemRate" class="cn-form-control" value="0.00" min="0"
+                                    step="any" onkeydown="if(event.key==='Enter') dnQuickAddItem()">
+                            </div>
+                            <div class="cn-form-group cn-small">
+                                <label for="dnItemStock">Stock</label>
+                                <input type="number" id="dnItemStock" class="cn-form-control" value="0" readonly
+                                    disabled style="background: rgba(var(--accent-primary-rgb), 0.05);">
+                            </div>
+                            <div class="cn-form-group" style="flex: 0 0 100px; min-width: 100px;">
+                                <button class="btn btn-primary" onclick="dnQuickAddItem()"
+                                    style="width: 100%; padding: 0.4rem; background: var(--accent-primary); border-color: var(--accent-primary); font-size: 0.85rem;">Add
+                                    Item</button>
+                            </div>
+                        </div>
+
+                        <!-- Grid Table -->
+                        <div class="cn-grid-container">
+                            <table class="cn-grid">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 40px; text-align: center;">S.No.</th>
+                                        <th style="width: 150px;">Barcode</th>
+                                        <th>Particular</th>
+                                        <th style="width: 80px;">Unit</th>
+                                        <th style="width: 80px;">Quantity</th>
+                                        <th style="width: 100px;">P.Rate</th>
+                                        <th style="width: 100px;">Amt</th>
+                                        <th style="width: 80px;">Ind. Dis%</th>
+                                        <th style="width: 100px;">Ind. Dis Amt</th>
+                                        <th style="width: 100px;">Total Disc</th>
+                                        <th style="width: 85px;">VAT</th>
+                                        <th style="width: 100px;">Net Amt</th>
+                                        <th style="width: 100px;">Net Rate</th>
+                                        <th style="width: 120px;">Mfg Date</th>
+                                        <th style="width: 120px;">Exp Date</th>
+                                        <th style="width: 50px; text-align: center;">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="dnGridBody">
+                                    <!-- Dynamically populated rows -->
+                                </tbody>
+                            </table>
+                            <div class="cn-grid-actions">
+                                <button class="btn btn-secondary" onclick="dnAddNewGridRow()"
+                                    style="display: flex; align-items: center; gap: 0.35rem; font-size: 0.8rem; padding: 0.35rem 0.75rem; background: #e0f2fe; border-color: #bae6fd; color: #0369a1;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none"
+                                        viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                                    </svg>
+                                    Add New Row
+                                </button>
+                                <span id="dnGridRowsCount"
+                                    style="font-size: 0.85rem; color: var(--text-muted); font-weight: 500;">0 items in
+                                    list</span>
+                            </div>
+                        </div>
+
+                        <!-- Footer Totals -->
+                        <div class="summary-totals"
+                            style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1.25rem; background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 0.75rem; box-shadow: var(--shadow-sm); flex-wrap: wrap; gap: 1rem;">
+                            <div class="summary-stat" style="min-width: auto; flex: 1; text-align: center;">
+                                <span class="label" style="font-size: 0.7rem;">Total Qty</span>
+                                <span class="value" id="dnTotalQty"
+                                    style="font-size: 1.2rem; color: var(--text-primary);">0.000</span>
+                            </div>
+                            <div class="summary-stat" style="min-width: auto; flex: 1; text-align: center;">
+                                <span class="label" style="font-size: 0.7rem;">Gross</span>
+                                <span class="value" id="dnGrossTotal"
+                                    style="font-size: 1.2rem; color: var(--text-primary);">0.00</span>
+                            </div>
+                            <div class="summary-stat" style="min-width: auto; flex: 1; text-align: center;">
+                                <span class="label" style="font-size: 0.7rem;">Discount</span>
+                                <span class="value" id="dnTotalDiscount"
+                                    style="font-size: 1.2rem; color: var(--text-primary);">0.00</span>
+                            </div>
+                            <div class="summary-stat" style="min-width: auto; flex: 1; text-align: center;">
+                                <span class="label" style="font-size: 0.7rem;">Taxable</span>
+                                <span class="value" id="dnTaxableAmount"
+                                    style="font-size: 1.2rem; color: var(--text-primary);">0.00</span>
+                            </div>
+                            <div class="summary-stat" style="min-width: auto; flex: 1; text-align: center;">
+                                <span class="label" style="font-size: 0.7rem;">Non Taxable</span>
+                                <span class="value" id="dnNonTaxableAmount"
+                                    style="font-size: 1.2rem; color: var(--text-primary);">0.00</span>
+                            </div>
+                            <div class="summary-stat" style="min-width: auto; flex: 1; text-align: center;">
+                                <span class="label" style="font-size: 0.7rem;">VAT</span>
+                                <span class="value" id="dnVatTotal"
+                                    style="font-size: 1.2rem; color: var(--text-primary);">0.00</span>
+                            </div>
+                            <div class="summary-stat"
+                                style="min-width: auto; flex: 1; text-align: center; border-left: 2px solid var(--border-light); padding-left: 1rem;">
+                                <span class="label" style="font-size: 0.7rem; color: var(--accent-primary);">Net
+                                    Amount</span>
+                                <span class="value" id="dnNetAmount"
+                                    style="font-size: 1.4rem; color: var(--accent-primary); font-weight: 800;">0.00</span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+            <div id="dateRangeModal" class="modal-overlay" style="z-index: 2000;">
+                <div class="modal" style="max-width: 1000px; padding: 0; width: 95%;">
+                    <div class="modal-body" style="padding: 1.5rem; overflow-x: auto;">
+                        <div
+                            style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+                            <button class="cal-nav-btn" onclick="changePickerMonth(-1)"
+                                style="padding: 0.5rem 1rem; background: var(--bg-secondary); border: 1px solid var(--border-light); border-radius: 0.4rem; cursor: pointer;">&lt;</button>
+                            <div id="pickerCalendarContainer"
+                                style="display: flex; gap: 2rem; flex: 1; justify-content: center;">
+                                <!-- Calendars Injected Here -->
+                            </div>
+                            <button class="cal-nav-btn" onclick="changePickerMonth(1)"
+                                style="padding: 0.5rem 1rem; background: var(--bg-secondary); border: 1px solid var(--border-light); border-radius: 0.4rem; cursor: pointer;">&gt;</button>
+                        </div>
+
+                        <div
+                            style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-light); padding-top: 1rem;">
+                            <button class="btn btn-primary" onclick="confirmDateRange()"
+                                style="padding: 0.6rem 2rem;">Apply
+                                Filter</button>
+                            <span id="rangeSelectionInfo"
+                                style="font-size: 0.9rem; color: var(--text-muted); font-weight: 500;">Select
+                                dates</span>
+                        </div>
+                    </div>
+                    <button onclick="closeRangePicker()"
+                        style="position: absolute; top: 15px; right: 15px; background: none; border: none; cursor: pointer; font-size: 1.5rem; color: var(--text-secondary);">&times;</button>
+                </div>
+            </div>
+
+            <!-- Cashier Name Modal -->
+            <div id="cashierModal" class="modal-overlay" onclick="closeCashierModal()">
+                <div class="modal" style="max-width: 400px;" onclick="event.stopPropagation()">
+                    <div class="modal-header">
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <h3 style="margin: 0;">Select Cashier</h3>
+                            <label class="theme-toggle" onclick="event.stopPropagation()">
+                                <input type="checkbox" id="themeCheckbox" onchange="toggleTheme()">
+                                <span class="theme-slider">
+                                    <span class="theme-icon moon-icon">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor">
+                                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                                        </svg>
+                                    </span>
+                                    <span class="theme-icon sun-icon">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor">
+                                            <circle cx="12" cy="12" r="5"></circle>
+                                            <line x1="12" y1="1" x2="12" y2="3"></line>
+                                            <line x1="12" y1="21" x2="12" y2="23"></line>
+                                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                                            <line x1="1" y1="12" x2="3" y2="12"></line>
+                                            <line x1="21" y1="12" x2="23" y2="12"></line>
+                                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                                        </svg>
+                                    </span>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="modal-body">
+                        <div id="cashierListContainer"></div>
+                    </div>
+                </div>
+            </div>
+
+            <script src="js/theme.js"></script>
+            <script src="js/api.js"></script>
+            <script src="js/business.js"></script>
+            <script src="js/cashier.js"></script>
+            <script src="js/nepali-date-converter.umd.js"></script>
+            <script src="js/nepalidate.js"></script>
+            <script src="js/reports.js"></script>
+            <script src="js/notifications.js"></script>
+            <script src="js/sw-register.js"></script>
+            <script src="js/sidebar-brand.js"></script>
+            <script src="js/sidebar.js"></script>
+
+            <!-- Credit Note (Sales Return) Logic -->
+            <script>
+                // ======= CREDIT NOTE (SALES RETURN) MODULE =======
+                let cnInventoryItems = [];
+                let cnCustomerList = [];
+                let cnGridItems = [];
+                let cnSelectedItem = null;
+
+                // Initialize when credit note tab is activated
+                function cnInit() {
+                    cnInitDates();
+                    cnLoadNextCNNumber();
+                    cnLoadInventory();
+                    cnLoadCustomers();
+                    cnAddNewGridRow();
+                    cnSetupAutocompletes();
+                }
+
+                function cnInitDates() {
+                    const today = new Date().toISOString().split('T')[0];
+                    const entryAD = document.getElementById('cnEntryDateAD');
+                    if (entryAD) {
+                        entryAD.value = today;
+                        cnUpdateBSText(today, 'cnEntryDateBS');
+                        entryAD.addEventListener('change', (e) => {
+                            cnUpdateBSText(e.target.value, 'cnEntryDateBS');
+                        });
+                    }
+                }
+
+                function cnUpdateBSText(adDateStr, targetBSId) {
+                    const targetEl = document.getElementById(targetBSId);
+                    if (!targetEl || !adDateStr) return;
+                    if (typeof window.convertToBS === 'function') {
+                        const bsStr = window.convertToBS(adDateStr + 'T00:00:00');
+                        targetEl.value = bsStr || '';
+                    } else {
+                        targetEl.value = adDateStr;
+                    }
+                }
+
+                async function cnLoadNextCNNumber() {
+                    try {
+                        const res = await window.posAPI.getNextCreditNoteNumber();
+                        document.getElementById('cnBillNo').value = res.nextNo || 'CN1-MUL-082/83';
+                    } catch (err) {
+                        document.getElementById('cnBillNo').value = 'CN1-MUL-082/83';
+                    }
+                }
+
+                async function cnLoadInventory() {
+                    try {
+                        const res = await window.posAPI.getAllInventory();
+                        cnInventoryItems = Array.isArray(res) ? res : [];
+                    } catch (err) {
+                        cnInventoryItems = [];
+                    }
+                }
+
+                async function cnLoadCustomers() {
+                    try {
+                        const allSales = await window.posAPI.getAllSales();
+                        const uniq = new Set();
+                        (Array.isArray(allSales) ? allSales : []).forEach(s => {
+                            if (s.customer) uniq.add(JSON.stringify({
+                                name: s.customer,
+                                address: s.address || '',
+                                vatNo: s.vatNo || ''
+                            }));
+                        });
+                        cnCustomerList = Array.from(uniq).map(s => JSON.parse(s));
+                    } catch (err) {
+                        cnCustomerList = [];
+                    }
+                }
+
+                function cnSetupAutocompletes() {
+                    // Customer autocomplete
+                    const custInput = document.getElementById('cnCustomer');
+                    const custSug = document.getElementById('cnCustomerSuggestions');
+                    if (custInput) {
+                        custInput.addEventListener('input', () => {
+                            const q = custInput.value.toLowerCase().trim();
+                            if (q.length < 1) { custSug.style.display = 'none'; return; }
+                            const matches = cnCustomerList.filter(c => c.name.toLowerCase().includes(q)).slice(0, 8);
+                            if (matches.length === 0) { custSug.style.display = 'none'; return; }
+                            custSug.innerHTML = matches.map(c =>
+                                `<div class="cn-suggestion-item" onclick="cnSelectCustomer('${c.name.replace(/'/g, "\\'")}',' ${c.address.replace(/'/g, "\\'")}',' ${c.vatNo.replace(/'/g, "\\'")}')">${c.name} <span style='font-size:0.75rem;color:var(--text-muted)'>${c.vatNo || ''}</span></div>`
+                            ).join('');
+                            custSug.style.display = 'block';
+                        });
+                        custInput.addEventListener('blur', () => setTimeout(() => custSug.style.display = 'none', 200));
+                    }
+
+                    // Item autocomplete
+                    const itemInput = document.getElementById('cnItemName');
+                    const itemSug = document.getElementById('cnItemSuggestions');
+                    if (itemInput) {
+                        itemInput.addEventListener('input', () => {
+                            const q = itemInput.value.toLowerCase().trim();
+                            if (q.length < 1) { itemSug.style.display = 'none'; return; }
+                            const matches = cnInventoryItems.filter(i => i.name && i.name.toLowerCase().includes(q)).slice(0, 10);
+                            if (matches.length === 0) { itemSug.style.display = 'none'; return; }
+                            itemSug.innerHTML = matches.map(item =>
+                                `<div class="cn-suggestion-item" onclick="cnSelectItem('${item.id}')">${item.name} <span style='font-size:0.75rem;color:var(--text-muted)'>Stock: ${item.stock || 0}</span></div>`
+                            ).join('');
+                            itemSug.style.display = 'block';
+                        });
+                        itemInput.addEventListener('blur', () => setTimeout(() => itemSug.style.display = 'none', 200));
+                    }
+                }
+
+                function cnSelectCustomer(name, address, vatNo) {
+                    document.getElementById('cnCustomer').value = name.trim();
+                    document.getElementById('cnAddress').value = address.trim();
+                    document.getElementById('cnVatNo').value = vatNo.trim();
+                    document.getElementById('cnCustomerSuggestions').style.display = 'none';
+                }
+
+                function cnSelectItem(id) {
+                    const item = cnInventoryItems.find(i => i.id === id);
+                    if (!item) return;
+                    cnSelectedItem = item;
+                    document.getElementById('cnItemName').value = item.name;
+                    document.getElementById('cnItemBarcode').value = item.barcode || '';
+                    document.getElementById('cnItemStock').value = item.stock || 0;
+                    document.getElementById('cnItemRate').value = parseFloat(item.price || 0).toFixed(2);
+                    document.getElementById('cnItemSuggestions').style.display = 'none';
+                    document.getElementById('cnItemQty').focus();
+                }
+
+                function cnHandleBarcodeScan(e) {
+                    if (e.key === 'Enter') {
+                        const barcode = e.target.value.trim();
+                        if (!barcode) return;
+                        const item = cnInventoryItems.find(i => i.barcode === barcode || i.id === barcode);
+                        if (item) {
+                            cnSelectItem(item.id);
+                        }
+                    }
+                }
+
+                function cnQuickAddItem() {
+                    const name = document.getElementById('cnItemName').value.trim();
+                    const barcode = document.getElementById('cnItemBarcode').value.trim();
+                    const qty = parseFloat(document.getElementById('cnItemQty').value) || 1;
+                    const rate = parseFloat(document.getElementById('cnItemRate').value) || 0;
+                    if (!name) return;
+
+                    cnGridItems.push({
+                        id: cnSelectedItem ? cnSelectedItem.id : ('cn-' + Date.now()),
+                        barcode: barcode,
+                        name: name,
+                        unit: 'Pcs',
+                        qty: qty,
+                        rate: rate,
+                        disPct: 0,
+                        disAmt: 0,
+                        vatType: '13%',
+                        expDate: ''
+                    });
+
+                    // Clear inputs
+                    cnSelectedItem = null;
+                    document.getElementById('cnItemName').value = '';
+                    document.getElementById('cnItemBarcode').value = '';
+                    document.getElementById('cnItemStock').value = '0';
+                    document.getElementById('cnItemQty').value = '1';
+                    document.getElementById('cnItemRate').value = '0.00';
+
+                    cnRenderGrid();
+                    cnCalculateTotals();
+                }
+
+                function cnAddNewGridRow() {
+                    cnGridItems.push({
+                        id: 'cn-' + Date.now(),
+                        barcode: '',
+                        name: '',
+                        unit: 'Pcs',
+                        qty: 0,
+                        rate: 0,
+                        disPct: 0,
+                        disAmt: 0,
+                        vatType: '13%',
+                        expDate: ''
+                    });
+                    cnRenderGrid();
+                }
+
+                function cnRemoveGridRow(idx) {
+                    cnGridItems.splice(idx, 1);
+                    cnRenderGrid();
+                    cnCalculateTotals();
+                }
+
+                function cnRenderGrid() {
+                    const tbody = document.getElementById('cnGridBody');
+                    tbody.innerHTML = '';
+                    cnGridItems.forEach((item, idx) => {
+                        const amt = (item.qty * item.rate).toFixed(2);
+                        const totalDisc = (parseFloat(item.disAmt) || 0).toFixed(2);
+                        const afterDisc = (item.qty * item.rate) - parseFloat(totalDisc);
+                        let vatAmt = 0;
+                        if (item.vatType === '13%') vatAmt = afterDisc * 0.13;
+                        const netAmt = (afterDisc + vatAmt).toFixed(2);
+
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td style="text-align: center;">${idx + 1}</td>
+                            <td><input type="text" value="${item.barcode}" onchange="cnGridItems[${idx}].barcode=this.value"></td>
+                            <td><input type="text" value="${item.name}" onchange="cnGridItems[${idx}].name=this.value" placeholder="Press ENTER to Select Item"></td>
+                            <td><select onchange="cnGridItems[${idx}].unit=this.value">
+                                <option value="Pcs" ${item.unit === 'Pcs' ? 'selected' : ''}>Pcs</option>
+                                <option value="Kg" ${item.unit === 'Kg' ? 'selected' : ''}>Kg</option>
+                                <option value="Ltr" ${item.unit === 'Ltr' ? 'selected' : ''}>Ltr</option>
+                                <option value="Box" ${item.unit === 'Box' ? 'selected' : ''}>Box</option>
+                            </select></td>
+                            <td><input type="number" value="${item.qty}" min="0" step="any" onchange="cnGridItems[${idx}].qty=parseFloat(this.value)||0;cnRenderGrid();cnCalculateTotals()"></td>
+                            <td><input type="number" value="${item.rate}" min="0" step="any" onchange="cnGridItems[${idx}].rate=parseFloat(this.value)||0;cnRenderGrid();cnCalculateTotals()"></td>
+                            <td><input type="text" value="${amt}" readonly></td>
+                            <td><input type="number" value="${item.disPct}" min="0" max="100" step="any" onchange="cnGridItems[${idx}].disPct=parseFloat(this.value)||0;cnGridItems[${idx}].disAmt=(cnGridItems[${idx}].qty*cnGridItems[${idx}].rate*cnGridItems[${idx}].disPct/100);cnRenderGrid();cnCalculateTotals()"></td>
+                            <td><input type="text" value="${totalDisc}" readonly></td>
+                            <td><select onchange="cnGridItems[${idx}].vatType=this.value;cnRenderGrid();cnCalculateTotals()">
+                                <option value="13%" ${item.vatType === '13%' ? 'selected' : ''}>13%</option>
+                                <option value="0%" ${item.vatType === '0%' ? 'selected' : ''}>0%</option>
+                            </select></td>
+                            <td><input type="text" value="${netAmt}" readonly></td>
+                            <td><input type="date" value="${item.expDate}" onchange="cnGridItems[${idx}].expDate=this.value"></td>
+                            <td style="text-align: center;"><button class="cn-btn-icon" onclick="cnRemoveGridRow(${idx})" title="Remove">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                            </button></td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+
+                    const countEl = document.getElementById('cnGridRowsCount');
+                    const filledCount = cnGridItems.filter(i => i.name.trim()).length;
+                    countEl.textContent = filledCount + ' items in list';
+                }
+
+                function cnCalculateTotals() {
+                    let totalQty = 0, gross = 0, totalDisc = 0, taxable = 0, nonTaxable = 0, vatTotal = 0;
+
+                    const flatDisPct = parseFloat(document.getElementById('cnFlatDisPct').value) || 0;
+                    const flatDisAmt = parseFloat(document.getElementById('cnFlatDisAmt').value) || 0;
+
+                    cnGridItems.forEach(item => {
+                        if (!item.name.trim()) return;
+                        const lineAmt = item.qty * item.rate;
+                        const lineDisc = (parseFloat(item.disAmt) || 0);
+                        const afterDisc = lineAmt - lineDisc;
+
+                        totalQty += item.qty;
+                        gross += lineAmt;
+                        totalDisc += lineDisc;
+
+                        if (item.vatType === '13%') {
+                            taxable += afterDisc;
+                            vatTotal += afterDisc * 0.13;
+                        } else {
+                            nonTaxable += afterDisc;
+                        }
+                    });
+
+                    // Apply flat discount
+                    const flatTotal = (gross * flatDisPct / 100) + flatDisAmt;
+                    totalDisc += flatTotal;
+
+                    const net = gross - totalDisc + vatTotal;
+
+                    document.getElementById('cnTotalQty').textContent = totalQty.toFixed(3);
+                    document.getElementById('cnGrossTotal').textContent = gross.toFixed(2);
+                    document.getElementById('cnTotalDiscount').textContent = totalDisc.toFixed(2);
+                    document.getElementById('cnTaxableAmount').textContent = taxable.toFixed(2);
+                    document.getElementById('cnNonTaxableAmount').textContent = nonTaxable.toFixed(2);
+                    document.getElementById('cnVatTotal').textContent = vatTotal.toFixed(2);
+                    document.getElementById('cnNetAmount').textContent = net.toFixed(2);
+                }
+
+                async function cnSaveCreditNote() {
+                    const cnNo = document.getElementById('cnBillNo').value;
+                    const refBillNo = document.getElementById('cnRefBillNo').value.trim();
+                    const customer = document.getElementById('cnCustomer').value.trim();
+                    const filledItems = cnGridItems.filter(i => i.name.trim() && i.qty > 0);
+
+                    if (filledItems.length === 0) {
+                        alert('Please add at least one item to the credit note.');
+                        return;
+                    }
+
+                    const totalQty = parseFloat(document.getElementById('cnTotalQty').textContent) || 0;
+                    const gross = parseFloat(document.getElementById('cnGrossTotal').textContent) || 0;
+                    const discount = parseFloat(document.getElementById('cnTotalDiscount').textContent) || 0;
+                    const taxable = parseFloat(document.getElementById('cnTaxableAmount').textContent) || 0;
+                    const nonTaxable = parseFloat(document.getElementById('cnNonTaxableAmount').textContent) || 0;
+                    const vat = parseFloat(document.getElementById('cnVatTotal').textContent) || 0;
+                    const net = parseFloat(document.getElementById('cnNetAmount').textContent) || 0;
+
+                    const cnData = {
+                        cnNo: cnNo,
+                        originalBillNo: refBillNo || '',
+                        customerName: customer,
+                        totalAmount: net,
+                        items: filledItems.map(i => ({
+                            id: i.id,
+                            name: i.name,
+                            barcode: i.barcode,
+                            qty: -Math.abs(i.qty), // Negative for returns
+                            price: i.rate,
+                            vatType: i.vatType
+                        })),
+                        reason: document.getElementById('cnRemarks').value.trim() || 'Sales Return',
+                        timestamp: new Date().toISOString()
+                    };
+
+                    try {
+                        await window.posAPI.createCreditNote(cnData);
+                        alert('Credit Note saved successfully!');
+                        cnResetForm();
+                        cnLoadNextCNNumber();
+                        // Refresh the returns report if it was loaded
+                        if (typeof loadReturnsReport === 'function') loadReturnsReport();
+                    } catch (err) {
+                        alert('Error saving credit note: ' + err.message);
+                    }
+                }
+
+                function cnResetForm() {
+                    cnGridItems = [];
+                    document.getElementById('cnRefBillNo').value = '';
+                    document.getElementById('cnCustomer').value = '';
+                    document.getElementById('cnAddress').value = '';
+                    document.getElementById('cnVatNo').value = '';
+                    document.getElementById('cnRemarks').value = '';
+                    document.getElementById('cnFlatDisPct').value = '0.00';
+                    document.getElementById('cnFlatDisAmt').value = '0.00';
+                    document.getElementById('cnDoFullReturn').checked = true;
+                    document.getElementById('cnReturnMode').value = 'Credit';
+                    document.getElementById('cnAccount').value = 'Sales Account';
+                    cnAddNewGridRow();
+                    cnCalculateTotals();
+                }
+
+                // Hook into tab switch to init credit note when first opened
+                let cnInitialized = false;
+                let dnInitialized = false;
+                const origSwitchTab = window.switchTab || switchTab;
+                // Patch switchTab to detect credit note/debit note tab activation
+                const _origSwitch = switchTab;
+                switchTab = function (tabId, event) {
+                    _origSwitch(tabId, event);
+                    if (tabId === 'creditNote' && !cnInitialized) {
+                        cnInitialized = true;
+                        cnInit();
+                    } else if (tabId === 'debitNote' && !dnInitialized) {
+                        dnInitialized = true;
+                        dnInit();
+                    }
+                };
+
+                // Register keyboard shortcuts when in Credit/Debit Note tab
+                document.addEventListener('keydown', (e) => {
+                    const activeTab = document.querySelector('.tab-content.active');
+                    if (activeTab) {
+                        if (activeTab.id === 'creditNote') {
+                            if (e.key === 'F3') {
+                                e.preventDefault();
+                                cnResetForm();
+                            } else if (e.key === 'Escape') {
+                                e.preventDefault();
+                                cnSaveCreditNote();
+                            }
+                        } else if (activeTab.id === 'debitNote') {
+                            if (e.key === 'F3') {
+                                e.preventDefault();
+                                dnResetForm();
+                            } else if (e.key === 'Escape') {
+                                e.preventDefault();
+                                dnSaveDebitNote();
+                            }
+                        }
+                    }
+                });
+            </script>
+
+            <!-- Debit Note (Purchase Return) Logic -->
+            <script>
+                // ======= DEBIT NOTE (PURCHASE RETURN) MODULE =======
+                let dnInventoryItems = [];
+                let dnSupplierList = [];
+                let dnGridItems = [];
+                let dnSelectedItem = null;
+
+                // Initialize when debit note tab is activated
+                function dnInit() {
+                    dnInitDates();
+                    dnLoadNextDNNumber();
+                    dnLoadInventory();
+                    dnLoadSuppliers();
+                    dnAddNewGridRow();
+                    dnSetupAutocompletes();
+                }
+
+                function dnInitDates() {
+                    const today = new Date().toISOString().split('T')[0];
+                    const entryAD = document.getElementById('dnEntryDateAD');
+                    if (entryAD) {
+                        entryAD.value = today;
+                        dnUpdateBSText(today, 'dnEntryDateBS');
+                        entryAD.addEventListener('change', (e) => {
+                            dnUpdateBSText(e.target.value, 'dnEntryDateBS');
+                        });
+                    }
+                }
+
+                function dnUpdateBSText(adDateStr, targetBSId) {
+                    const targetEl = document.getElementById(targetBSId);
+                    if (!targetEl || !adDateStr) return;
+                    if (typeof window.convertToBS === 'function') {
+                        const bsStr = window.convertToBS(adDateStr + 'T00:00:00');
+                        targetEl.value = bsStr || '';
+                    } else {
+                        targetEl.value = adDateStr;
+                    }
+                }
+
+                async function dnLoadNextDNNumber() {
+                    try {
+                        const res = await window.posAPI.getNextDebitNoteNumber();
+                        document.getElementById('dnBillNo').value = res.nextNo || 'DN1-MUL-082/83';
+                    } catch (err) {
+                        document.getElementById('dnBillNo').value = 'DN1-MUL-082/83';
+                    }
+                }
+
+                async function dnLoadInventory() {
+                    try {
+                        const res = await window.posAPI.getAllInventory();
+                        dnInventoryItems = Array.isArray(res) ? res : [];
+                    } catch (err) {
+                        dnInventoryItems = [];
+                    }
+                }
+
+                async function dnLoadSuppliers() {
+                    try {
+                        const allPurchases = await window.posAPI.getAllPurchases();
+                        const uniq = new Set();
+                        (Array.isArray(allPurchases) ? allPurchases : []).forEach(p => {
+                            if (p.supplier) uniq.add(JSON.stringify({
+                                name: p.supplier,
+                                address: p.address || '',
+                                vatNo: p.vatNo || ''
+                            }));
+                        });
+                        dnSupplierList = Array.from(uniq).map(s => JSON.parse(s));
+                    } catch (err) {
+                        dnSupplierList = [];
+                    }
+                }
+
+                function dnSetupAutocompletes() {
+                    // Supplier autocomplete
+                    const suppInput = document.getElementById('dnSupplier');
+                    const suppSug = document.getElementById('dnSupplierSuggestions');
+                    if (suppInput) {
+                        suppInput.addEventListener('input', () => {
+                            const q = suppInput.value.toLowerCase().trim();
+                            if (q.length < 1) { suppSug.style.display = 'none'; return; }
+                            const matches = dnSupplierList.filter(s => s.name.toLowerCase().includes(q)).slice(0, 8);
+                            if (matches.length === 0) { suppSug.style.display = 'none'; return; }
+                            suppSug.innerHTML = matches.map(s =>
+                                `<div class="cn-suggestion-item" onclick="dnSelectSupplier('${s.name.replace(/'/g, "\\'")}',' ${s.address.replace(/'/g, "\\'")}',' ${s.vatNo.replace(/'/g, "\\'")}')">${s.name} <span style='font-size:0.75rem;color:var(--text-muted)'>${s.vatNo || ''}</span></div>`
+                            ).join('');
+                            suppSug.style.display = 'block';
+                        });
+                        suppInput.addEventListener('blur', () => setTimeout(() => suppSug.style.display = 'none', 200));
+                    }
+
+                    // Item autocomplete
+                    const itemInput = document.getElementById('dnItemName');
+                    const itemSug = document.getElementById('dnItemSuggestions');
+                    if (itemInput) {
+                        itemInput.addEventListener('input', () => {
+                            const q = itemInput.value.toLowerCase().trim();
+                            if (q.length < 1) { itemSug.style.display = 'none'; return; }
+                            const matches = dnInventoryItems.filter(i => i.name && i.name.toLowerCase().includes(q)).slice(0, 10);
+                            if (matches.length === 0) { itemSug.style.display = 'none'; return; }
+                            itemSug.innerHTML = matches.map(item =>
+                                `<div class="cn-suggestion-item" onclick="dnSelectItem('${item.id}')">${item.name} <span style='font-size:0.75rem;color:var(--text-muted)'>Stock: ${item.stock || 0}</span></div>`
+                            ).join('');
+                            itemSug.style.display = 'block';
+                        });
+                        itemInput.addEventListener('blur', () => setTimeout(() => itemSug.style.display = 'none', 200));
+                    }
+                }
+
+                function dnSelectSupplier(name, address, vatNo) {
+                    document.getElementById('dnSupplier').value = name.trim();
+                    document.getElementById('dnAddress').value = address.trim();
+                    document.getElementById('dnVatNo').value = vatNo.trim();
+                    document.getElementById('dnSupplierSuggestions').style.display = 'none';
+                }
+
+                function dnSelectItem(id) {
+                    const item = dnInventoryItems.find(i => i.id === id);
+                    if (!item) return;
+                    dnSelectedItem = item;
+                    document.getElementById('dnItemName').value = item.name;
+                    document.getElementById('dnItemBarcode').value = item.barcode || '';
+                    document.getElementById('dnItemStock').value = item.stock || 0;
+                    document.getElementById('dnItemRate').value = parseFloat(item.price || 0).toFixed(2);
+                    document.getElementById('dnItemSuggestions').style.display = 'none';
+                    document.getElementById('dnItemQty').focus();
+                }
+
+                function dnHandleBarcodeScan(e) {
+                    if (e.key === 'Enter') {
+                        const barcode = e.target.value.trim();
+                        if (!barcode) return;
+                        const item = dnInventoryItems.find(i => i.barcode === barcode || i.id === barcode);
+                        if (item) {
+                            dnSelectItem(item.id);
+                        }
+                    }
+                }
+
+                function dnQuickAddItem() {
+                    const name = document.getElementById('dnItemName').value.trim();
+                    const barcode = document.getElementById('dnItemBarcode').value.trim();
+                    const qty = parseFloat(document.getElementById('dnItemQty').value) || 1;
+                    const rate = parseFloat(document.getElementById('dnItemRate').value) || 0;
+                    if (!name) return;
+
+                    dnGridItems.push({
+                        id: dnSelectedItem ? dnSelectedItem.id : ('dn-' + Date.now()),
+                        barcode: barcode,
+                        name: name,
+                        unit: 'Pcs',
+                        qty: qty,
+                        rate: rate,
+                        disPct: 0,
+                        disAmt: 0,
+                        vatType: '13%',
+                        expDate: '',
+                        mfgDate: ''
+                    });
+
+                    // Clear inputs
+                    dnSelectedItem = null;
+                    document.getElementById('dnItemName').value = '';
+                    document.getElementById('dnItemBarcode').value = '';
+                    document.getElementById('dnItemStock').value = '0';
+                    document.getElementById('dnItemQty').value = '1';
+                    document.getElementById('dnItemRate').value = '0.00';
+
+                    dnRenderGrid();
+                    dnCalculateTotals();
+                }
+
+                function dnAddNewGridRow() {
+                    dnGridItems.push({
+                        id: 'dn-' + Date.now(),
+                        barcode: '',
+                        name: '',
+                        unit: 'Pcs',
+                        qty: 0,
+                        rate: 0,
+                        disPct: 0,
+                        disAmt: 0,
+                        vatType: '13%',
+                        expDate: '',
+                        mfgDate: ''
+                    });
+                    dnRenderGrid();
+                }
+
+                function dnRemoveGridRow(idx) {
+                    dnGridItems.splice(idx, 1);
+                    dnRenderGrid();
+                    dnCalculateTotals();
+                }
+
+                function dnRenderGrid() {
+                    const tbody = document.getElementById('dnGridBody');
+                    tbody.innerHTML = '';
+                    dnGridItems.forEach((item, idx) => {
+                        const amt = (item.qty * item.rate).toFixed(2);
+                        const totalDisc = (parseFloat(item.disAmt) || 0).toFixed(2);
+                        const afterDisc = (item.qty * item.rate) - parseFloat(totalDisc);
+                        let vatAmt = 0;
+                        if (item.vatType === '13%') vatAmt = afterDisc * 0.13;
+                        const netAmt = (afterDisc + vatAmt).toFixed(2);
+                        const netRate = item.qty > 0 ? (afterDisc / item.qty).toFixed(2) : '0.00';
+
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td style="text-align: center;">${idx + 1}</td>
+                            <td><input type="text" value="${item.barcode}" onchange="dnGridItems[${idx}].barcode=this.value"></td>
+                            <td><input type="text" value="${item.name}" onchange="dnGridItems[${idx}].name=this.value" placeholder="Press ENTER to Select Item"></td>
+                            <td><select onchange="dnGridItems[${idx}].unit=this.value">
+                                <option value="Pcs" ${item.unit === 'Pcs' ? 'selected' : ''}>Pcs</option>
+                                <option value="Kg" ${item.unit === 'Kg' ? 'selected' : ''}>Kg</option>
+                                <option value="Ltr" ${item.unit === 'Ltr' ? 'selected' : ''}>Ltr</option>
+                                <option value="Box" ${item.unit === 'Box' ? 'selected' : ''}>Box</option>
+                            </select></td>
+                            <td><input type="number" value="${item.qty}" min="0" step="any" onchange="dnGridItems[${idx}].qty=parseFloat(this.value)||0;dnRenderGrid();dnCalculateTotals()"></td>
+                            <td><input type="number" value="${item.rate}" min="0" step="any" onchange="dnGridItems[${idx}].rate=parseFloat(this.value)||0;dnRenderGrid();dnCalculateTotals()"></td>
+                            <td><input type="text" value="${amt}" readonly></td>
+                            <td><input type="number" value="${item.disPct}" min="0" max="100" step="any" onchange="dnGridItems[${idx}].disPct=parseFloat(this.value)||0;dnGridItems[${idx}].disAmt=(dnGridItems[${idx}].qty*dnGridItems[${idx}].rate*dnGridItems[${idx}].disPct/100);dnRenderGrid();dnCalculateTotals()"></td>
+                            <td><input type="number" value="${item.disAmt}" min="0" step="any" onchange="dnGridItems[${idx}].disAmt=parseFloat(this.value)||0;dnGridItems[${idx}].disPct=(dnGridItems[${idx}].qty*dnGridItems[${idx}].rate > 0 ? dnGridItems[${idx}].disAmt/(dnGridItems[${idx}].qty*dnGridItems[${idx}].rate)*100 : 0);dnRenderGrid();dnCalculateTotals()"></td>
+                            <td><input type="text" value="${totalDisc}" readonly></td>
+                            <td><select onchange="dnGridItems[${idx}].vatType=this.value;dnRenderGrid();dnCalculateTotals()">
+                                <option value="13%" ${item.vatType === '13%' ? 'selected' : ''}>13%</option>
+                                <option value="0%" ${item.vatType === '0%' ? 'selected' : ''}>0%</option>
+                            </select></td>
+                            <td><input type="text" value="${netAmt}" readonly></td>
+                            <td><input type="text" value="${netRate}" readonly></td>
+                            <td><input type="date" value="${item.mfgDate}" onchange="dnGridItems[${idx}].mfgDate=this.value"></td>
+                            <td><input type="date" value="${item.expDate}" onchange="dnGridItems[${idx}].expDate=this.value"></td>
+                            <td style="text-align: center;"><button class="cn-btn-icon" onclick="dnRemoveGridRow(${idx})" title="Remove">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                            </button></td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+
+                    const countEl = document.getElementById('dnGridRowsCount');
+                    const filledCount = dnGridItems.filter(i => i.name.trim()).length;
+                    countEl.textContent = filledCount + ' items in list';
+                }
+
+                function dnCalculateTotals() {
+                    let totalQty = 0, gross = 0, totalDisc = 0, taxable = 0, nonTaxable = 0, vatTotal = 0;
+
+                    dnGridItems.forEach(item => {
+                        if (!item.name.trim()) return;
+                        const lineAmt = item.qty * item.rate;
+                        const lineDisc = (parseFloat(item.disAmt) || 0);
+                        const afterDisc = lineAmt - lineDisc;
+
+                        totalQty += item.qty;
+                        gross += lineAmt;
+                        totalDisc += lineDisc;
+
+                        if (item.vatType === '13%') {
+                            taxable += afterDisc;
+                            vatTotal += afterDisc * 0.13;
+                        } else {
+                            nonTaxable += afterDisc;
+                        }
+                    });
+
+                    const net = gross - totalDisc + vatTotal;
+
+                    document.getElementById('dnTotalQty').textContent = totalQty.toFixed(3);
+                    document.getElementById('dnGrossTotal').textContent = gross.toFixed(2);
+                    document.getElementById('dnTotalDiscount').textContent = totalDisc.toFixed(2);
+                    document.getElementById('dnTaxableAmount').textContent = taxable.toFixed(2);
+                    document.getElementById('dnNonTaxableAmount').textContent = nonTaxable.toFixed(2);
+                    document.getElementById('dnVatTotal').textContent = vatTotal.toFixed(2);
+                    document.getElementById('dnNetAmount').textContent = net.toFixed(2);
+                }
+
+                async function dnFilterRefNo() {
+                    const refNo = document.getElementById('dnRefPINo').value.trim();
+                    if (!refNo) {
+                        alert('Please enter a Ref PI No to filter.');
+                        return;
+                    }
+                    try {
+                        const purchases = await window.posAPI.getAllPurchases();
+                        const found = purchases.find(p => p.piNo === refNo);
+                        if (found) {
+                            document.getElementById('dnSupplier').value = found.supplier || '';
+                            document.getElementById('dnAddress').value = found.address || '';
+                            document.getElementById('dnVatNo').value = found.vatNo || '';
+                            document.getElementById('dnRemarks').value = found.remarks || '';
+                            document.getElementById('dnSupplierBillNo').value = found.invoiceNo || '';
+                            document.getElementById('dnPurchaseType').value = found.purchaseType || 'Trading';
+                            document.getElementById('dnReturnMode').value = found.paymentTerms === 'Credit' ? 'Credit' : 'Cash';
+                            document.getElementById('dnAccount').value = found.account || 'Purchase Account';
+                            document.getElementById('dnGodown').value = found.godown || 'Main Warehouse';
+
+                            // Populate grid items from purchase invoice items if matching
+                            if (found.items && found.items.length > 0) {
+                                dnGridItems = found.items.map(item => ({
+                                    id: item.id,
+                                    barcode: item.barcode || '',
+                                    name: item.name,
+                                    unit: item.unit || 'Pcs',
+                                    qty: item.qty,
+                                    rate: item.rate,
+                                    disPct: item.disPct || 0,
+                                    disAmt: item.disAmt || 0,
+                                    vatType: item.vatType || '13%',
+                                    expDate: item.expDate || '',
+                                    mfgDate: item.mfgDate || ''
+                                }));
+                                dnRenderGrid();
+                                dnCalculateTotals();
+                            }
+                            alert('Purchase Invoice loaded successfully!');
+                        } else {
+                            alert('Ref PI No not found.');
+                        }
+                    } catch (err) {
+                        alert('Error loading purchases: ' + err.message);
+                    }
+                }
+
+                async function dnSaveDebitNote() {
+                    const dnNo = document.getElementById('dnBillNo').value;
+                    const refPINo = document.getElementById('dnRefPINo').value.trim();
+                    const supplier = document.getElementById('dnSupplier').value.trim();
+                    const filledItems = dnGridItems.filter(i => i.name.trim() && i.qty > 0);
+
+                    if (filledItems.length === 0) {
+                        alert('Please add at least one item to the debit note.');
+                        return;
+                    }
+
+                    const totalQty = parseFloat(document.getElementById('dnTotalQty').textContent) || 0;
+                    const gross = parseFloat(document.getElementById('dnGrossTotal').textContent) || 0;
+                    const discount = parseFloat(document.getElementById('dnTotalDiscount').textContent) || 0;
+                    const taxable = parseFloat(document.getElementById('dnTaxableAmount').textContent) || 0;
+                    const nonTaxable = parseFloat(document.getElementById('dnNonTaxableAmount').textContent) || 0;
+                    const vat = parseFloat(document.getElementById('dnVatTotal').textContent) || 0;
+                    const net = parseFloat(document.getElementById('dnNetAmount').textContent) || 0;
+
+                    const dnData = {
+                        dnNo: dnNo,
+                        originalPINo: refPINo || '',
+                        supplierName: supplier,
+                        totalAmount: net,
+                        items: filledItems.map(i => ({
+                            id: i.id,
+                            name: i.name,
+                            barcode: i.barcode,
+                            qty: i.qty,
+                            rate: i.rate,
+                            vatType: i.vatType
+                        })),
+                        reason: document.getElementById('dnRemarks').value.trim() || 'Purchase Return',
+                        timestamp: new Date().toISOString()
+                    };
+
+                    try {
+                        await window.posAPI.createDebitNote(dnData);
+                        alert('Debit Note saved successfully!');
+                        dnResetForm();
+                        dnLoadNextDNNumber();
+                    } catch (err) {
+                        alert('Error saving debit note: ' + err.message);
+                    }
+                }
+
+                function dnResetForm() {
+                    dnGridItems = [];
+                    document.getElementById('dnRefPINo').value = '';
+                    document.getElementById('dnSupplier').value = '';
+                    document.getElementById('dnAddress').value = '';
+                    document.getElementById('dnVatNo').value = '';
+                    document.getElementById('dnRemarks').value = '';
+                    document.getElementById('dnSupplierBillNo').value = '';
+                    document.getElementById('dnPurchaseType').value = 'Trading';
+                    document.getElementById('dnReturnMode').value = 'Credit';
+                    document.getElementById('dnAccount').value = 'Purchase Account';
+                    document.getElementById('dnChequeNo').value = '';
+                    document.getElementById('dnChequeDate').value = '';
+                    dnAddNewGridRow();
+                    dnCalculateTotals();
+                }
+            </script>
+            </script>
+</body>
+
+</html>

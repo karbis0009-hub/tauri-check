@@ -1,0 +1,2725 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Billing - K Pos</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Dancing+Script:wght@700&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="manifest" href="manifest.json">
+  <style>
+    /* Specific overrides for POS to hide sidebar on small screens if needed, 
+           but for now we keep the layout consistent */
+    .billing-calculator-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 0.5rem;
+      border: 1px solid var(--border-light);
+      background: var(--bg-secondary);
+      color: var(--text-secondary);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .billing-calculator-btn:hover {
+      color: var(--accent-primary);
+      border-color: var(--accent-primary);
+    }
+
+    #smartBulkModal #bulkRate,
+    #smartBulkModal #bulkAmount {
+      appearance: textfield;
+      -moz-appearance: textfield;
+    }
+
+    #smartBulkModal #bulkRate::-webkit-outer-spin-button,
+    #smartBulkModal #bulkRate::-webkit-inner-spin-button,
+    #smartBulkModal #bulkAmount::-webkit-outer-spin-button,
+    #smartBulkModal #bulkAmount::-webkit-inner-spin-button {
+      appearance: none;
+      margin: 0;
+    }
+
+    #smartBulkModal #bulkQty,
+    #smartBulkModal #bulkRate {
+      padding: 0.65rem 0.5rem !important;
+      font-size: 1.5rem !important;
+      line-height: 1.2;
+    }
+
+    .billing-calculator-modal {
+      width: min(760px, calc(100vw - 2rem));
+      height: min(760px, calc(100vh - 4rem));
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      border-radius: 0.75rem;
+      overflow: hidden;
+      position: relative;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.28);
+    }
+
+    .billing-calculator-frame {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      display: block;
+      background: var(--bg-card);
+      overflow: auto;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+
+    .billing-calculator-frame::-webkit-scrollbar {
+      display: none;
+    }
+
+    /* ── Vertical Category Sidebar (PetPooja style) ── */
+    .vert-cat-sidebar {
+      width: 110px;
+      min-width: 110px;
+      max-width: 110px;
+      height: 100%;
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border-light);
+      overflow-y: auto;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+
+    .vert-cat-sidebar::-webkit-scrollbar {
+      display: none;
+    }
+
+    .vert-cat-item {
+      width: 100%;
+      padding: 10px 6px;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      cursor: pointer;
+      border: none;
+      background: none;
+      border-left: 3px solid transparent;
+      border-radius: 0;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      line-height: 1.25;
+      word-break: break-word;
+    }
+
+    .vert-cat-item:hover {
+      background: rgba(var(--accent-primary-rgb), 0.08);
+      color: var(--text-primary);
+    }
+
+    .vert-cat-item.active {
+      background: var(--accent-primary);
+      color: var(--text-on-accent);
+      border-left-color: var(--accent-secondary);
+      font-weight: 600;
+    }
+
+    .vert-cat-count {
+      font-size: 10px;
+      opacity: 0.6;
+      font-weight: 400;
+    }
+
+    .vert-cat-item.active .vert-cat-count {
+      color: var(--text-on-accent);
+      opacity: 0.9;
+    }
+
+    @media (max-width: 768px) {
+      .vert-cat-sidebar {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+  <div class="app-layout">
+    <aside class="sidebar">
+      <!-- Mobile Sidebar Header -->
+      <div class="sidebar-header mobile-only">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <div class="brand-text">K Pos</div>
+        </div>
+        <button class="close-sidebar-btn" onclick="toggleSidebar()">&times;</button>
+      </div>
+
+      <div class="brand" id="sidebarBrand">K Pos</div>
+      <nav class="nav-menu">
+        <a href="index.html" class="nav-link">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+          </svg>
+          <span>Dashboard</span>
+        </a>
+        <a href="billing.html" class="nav-link active">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+          </svg>
+          <span>Billing / POS</span>
+        </a>
+        <a href="sales.html" class="nav-link">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m.599-.747C13.101 16.559 12.552 16 12 16c-1.11 0-2.08-.402-2.599-1M12 16V7">
+            </path>
+          </svg>
+          <span>Sales</span>
+        </a>
+        <a href="reports.html" class="nav-link">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          <span>Reports</span>
+        </a>
+        <a href="purchase.html" class="nav-link">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+          </svg>
+          <span>Purchase Invoice</span>
+        </a>
+        <a href="sales-invoice.html" class="nav-link">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
+          </svg>
+          <span>Sales Tax Invoice</span>
+        </a>
+
+        <a href="ar.html" class="nav-link">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z">
+            </path>
+          </svg>
+          <span>CRM</span>
+        </a>
+        <div class="nav-item-group">
+          <a href="inventory.html" class="nav-link">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+            </svg>
+            <span>Inventory</span>
+          </a>
+          <div class="sub-menu">
+            <a href="inventory.html" class="nav-sub-link">List Product</a>
+            <a href="add-product.html" class="nav-sub-link">Add Product</a>
+            <a href="category.html" class="nav-sub-link">Category</a>
+            <a href="barcode.html" class="nav-sub-link">Barcodes</a>
+          </div>
+        </div>
+        <a href="payroll.html" class="nav-link">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+            <circle cx="8.5" cy="7" r="4" />
+            <polyline points="17 11 19 13 23 9" />
+          </svg>
+          <span>Payroll</span>
+        </a>
+        <a href="settings.html" class="nav-link">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          <span>Settings</span>
+        </a>
+      </nav>
+
+      <!-- Sidebar Footer for Mobile (Shift Info) -->
+      <div class="sidebar-footer mobile-only">
+        <div class="shift-section">
+          <span class="shift-label">Shift</span>
+          <div class="shift-user">
+            <div class="user-avatar-sm" id="sidebarAvatar">AD</div>
+            <span class="user-name-sm" id="sidebarCashierName">Admin User</span>
+          </div>
+        </div>
+        <div class="sidebar-copyright">
+          <p>© 2026 K Pos App</p>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main-content" style="height: 100vh; display: flex; flex-direction: column;">
+      <header class="top-bar" style="overflow: visible; flex-shrink: 0;">
+        <div style="display: flex; gap: 1rem; align-items: center; width: 100%;">
+          <button class="menu-toggle mobile-only" onclick="toggleSidebar()"
+            style="background: none; border: none; color: var(--text-primary); cursor: pointer; padding: 0.5rem; display: flex; align-items: center; justify-content: center;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+          <h1 class="logo-text">K Pos</h1>
+          <div id="headerSearchTarget" style="flex: 1; max-width: 400px; position: relative;" class="desktop-only">
+            <div id="productSearchContainer" style="position: relative; width: 100%;">
+              <input type="text" id="productSearch" class="form-input" placeholder="Scan Barcode or Search Products..."
+                autocomplete="off" style="padding-right: 2.8rem;">
+              <button type="button" id="clearProductSearch" aria-label="Clear search"
+                style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); border: none; background: transparent; color: #6b7280; font-size: 1.2rem; cursor: pointer; display: none; padding: 0; line-height: 1;">
+                &times;
+              </button>
+              <div id="searchResults"
+                style="display: none; position: fixed; top: 100%; left: 0; right: 0; background: var(--bg-secondary); border: 1px solid var(--border-light); max-height: 200px; overflow-y: auto; z-index: 100;">
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 1rem;">
+
+
+
+
+
+
+
+          <button type="button" class="billing-calculator-btn" onclick="openBusinessCalculator()"
+            title="Business Calculator" aria-label="Business Calculator">
+            <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="4" y="2" width="16" height="20" rx="2"></rect>
+              <line x1="8" y1="6" x2="16" y2="6"></line>
+              <line x1="8" y1="10" x2="8" y2="10"></line>
+              <line x1="12" y1="10" x2="12" y2="10"></line>
+              <line x1="16" y1="10" x2="16" y2="10"></line>
+              <line x1="8" y1="14" x2="8" y2="14"></line>
+              <line x1="12" y1="14" x2="12" y2="14"></line>
+              <line x1="16" y1="14" x2="16" y2="14"></line>
+              <line x1="8" y1="18" x2="8" y2="18"></line>
+              <line x1="12" y1="18" x2="12" y2="18"></line>
+              <line x1="16" y1="18" x2="16" y2="18"></line>
+            </svg>
+          </button>
+
+          <!-- Notification Bell -->
+          <div style="position: relative;" id="notificationContainer">
+
+            <div style="cursor: pointer;" onclick="toggleNotificationPanel()" title="Notifications">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                style="color: var(--text-secondary);">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+              <!-- Red notification dot -->
+              <div id="notificationDot"
+                style="display: none; position: absolute; top: -2px; right: -2px; width: 8px; height: 8px; background: #ef4444; border-radius: 50%; border: 2px solid var(--bg-secondary);">
+              </div>
+            </div>
+
+            <!-- Notification Panel -->
+            <div id="notificationPanel" class="notification-panel">
+              <div class="notification-header">
+                <span>Notifications</span>
+                <button onclick="clearNotifications()"
+                  style="background: none; border: none; font-size: 0.7rem; color: var(--accent-primary); cursor: pointer;">Clear
+                  All</button>
+              </div>
+              <div id="notificationList" class="notification-list">
+                <!-- Alerts will be injected here -->
+                <div style="padding: 1rem; text-align: center; color: var(--text-muted); font-size: 0.8rem;">
+                  No new notifications</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- User Profile -->
+          <div class="user-profile" onclick="openCashierModal()" style="cursor: pointer;">
+            <span id="cashierName">Admin User</span>
+            <div class="user-avatar" id="cashierAvatar">AD</div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Cashier Name Modal -->
+      <div id="cashierModal" class="modal-overlay" onclick="closeCashierModal()">
+        <div class="modal" style="max-width: 400px;" onclick="event.stopPropagation()">
+          <div class="modal-header">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+              <h3 style="margin: 0;">Select Cashier</h3>
+              <label class="theme-toggle" onclick="event.stopPropagation()">
+                <input type="checkbox" id="themeCheckbox" onchange="toggleTheme()">
+                <span class="theme-slider">
+                  <span class="theme-icon moon-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                  </span>
+                  <span class="theme-icon sun-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <circle cx="12" cy="12" r="5"></circle>
+                      <line x1="12" y1="1" x2="12" y2="3"></line>
+                      <line x1="12" y1="21" x2="12" y2="23"></line>
+                      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                      <line x1="1" y1="12" x2="3" y2="12"></line>
+                      <line x1="21" y1="12" x2="23" y2="12"></line>
+                      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                  </span>
+                </span>
+              </label>
+            </div>
+          </div>
+          <div class="modal-body">
+            <div id="cashierListContainer">
+              <!-- Grid of cashiers will be injected here -->
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Sale Confirmation Modal -->
+      <div id="saleConfirmModal" class="modal-overlay">
+        <div class="modal" style="max-width: 450px; border-top: 5px solid var(--accent-success);">
+          <div class="modal-header">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <div
+                style="background: rgba(16, 185, 129, 0.1); color: var(--accent-success); padding: 0.5rem; border-radius: 50%;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+              </div>
+              <h3 style="margin: 0; font-size: 1.25rem;">Confirm Sale</h3>
+            </div>
+          </div>
+          <div class="modal-body" style="padding: 1.5rem;">
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+              <div
+                style="display: flex; justify-content: space-between; padding-bottom: 0.75rem; border-bottom: 1px dashed var(--border-light);">
+                <span style="color: var(--text-secondary);">Bill Number:</span>
+                <span id="conf-billNo" style="font-weight: 700; color: var(--text-primary);">...</span>
+              </div>
+              <div
+                style="display: flex; justify-content: space-between; padding-bottom: 0.75rem; border-bottom: 1px dashed var(--border-light);">
+                <span style="color: var(--text-secondary);">Customer:</span>
+                <span id="conf-customer" style="font-weight: 600;">...</span>
+              </div>
+              <div class="confirm-subtotal-row">
+                <span>Subtotal:</span>
+                <span id="conf-subtotal">Rs. 0.00</span>
+              </div>
+              <div class="confirm-discount-row">
+                <div class="confirm-discount-heading">
+                  <span>Discount:</span>
+                  <div class="confirm-discount-controls">
+                    <input type="number" id="confirmDiscountInput" class="form-input" min="1" step="1" value=""
+                      inputmode="decimal" oninput="updateConfirmDiscount()" aria-label="Discount value">
+                    <button type="button" class="confirm-discount-clear" onclick="clearConfirmDiscount()"
+                      aria-label="Clear discount">&times;</button>
+                    <div class="confirm-discount-mode">
+                      <button type="button" id="discountPercentMode"
+                        onclick="setConfirmDiscountMode('percent')">%</button>
+                      <button type="button" id="discountAmountMode" class="active"
+                        onclick="setConfirmDiscountMode('amount')">Rs.</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="confirm-total-card">
+                <span>Total:</span>
+                <span id="conf-total">Rs. 0.00</span>
+              </div>
+              <div id="conf-you-save" class="confirm-you-save">You save: Rs. 0.00</div>
+
+              <!-- Tender and Change Section -->
+              <div id="tenderSection"
+                style="display: none; flex-direction: column; gap: 0.75rem; margin-top: 0.5rem; padding: 1rem; background: var(--bg-card); border-radius: 0.5rem; border: 1px solid var(--border-light);">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                  <span style="color: var(--text-secondary); font-size: 0.9rem;">Cash Tender:</span>
+                  <div style="display: flex; gap: 0.5rem; align-items: center;">
+
+                    <input type="number" id="cashTendered" class="form-input"
+                      style="width: 160px; text-align: right; font-weight: 800; font-size: 1.5rem; padding: 0.5rem; height: 50px; color: var(--accent-primary);"
+                      placeholder="0.00">
+                  </div>
+                </div>
+              </div>
+              <div id="quickTenderContainer"
+                style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; margin-bottom: 0.75rem;">
+                <!-- Buttons injected by JS -->
+              </div>
+              <div id="changeSection"
+                style="display: flex; align-items: center; justify-content: space-between; border-top: 1px dashed var(--border-light); margin-top: 0.25rem; padding-top: 0.5rem;">
+                <span style="color: var(--text-secondary); font-size: 0.9rem;">Change:</span>
+                <span id="conf-change" style="font-weight: 800; color: var(--accent-primary); font-size: 1.5rem;">Rs.
+                  0.00</span>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer" id="confirmSaleFooter"
+            style="display: grid; grid-template-columns: 1fr 2fr; gap: 0.75rem;">
+            <button class="btn btn-secondary" onclick="closeSaleConfirmModal()" style="justify-content: center;">Go
+              Back</button>
+            <button class="btn btn-primary" id="btnFinalizePrint"
+              style="display:none; justify-content:center; background:var(--accent-success); border-color:var(--accent-success); color:var(--text-on-accent); font-weight:700; font-size:1rem;">Save
+              &amp; Print Bill</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="pos-layout" style="flex: 1; overflow: hidden; display: flex;">
+        <!-- Vertical Category Sidebar (PetPooja style) -->
+        <div class="vert-cat-sidebar" id="vertCatSidebar">
+          <!-- Items injected by JS -->
+        </div>
+
+        <!-- Left: Products Grid Area -->
+        <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+          <!-- Categories Tabs with Manage Button -->
+          <!-- Mobile Search Area (moved here on small screens) -->
+          <div id="mobileSearchTarget" class="mobile-only"
+            style="padding: 0.75rem 1rem; background: var(--bg-card); border-bottom: 1px solid var(--border-light);">
+          </div>
+
+          <!-- Categories Tabs with Manage Button -->
+          <div
+            style="display: flex; align-items: center; background: var(--bg-main); border-bottom: 1px solid var(--border-light); padding-right: 0.5rem;">
+            <div class="category-tabs" id="categoryTabs" style="flex: 1; border-bottom: none; background: transparent;">
+              <button class="category-tab active" data-category="All" onclick="filterByCategory('All')">
+                All <span></span>
+              </button>
+              <!-- Categories injected here -->
+            </div>
+            <button class="btn-icon" onclick="openCategoryOrderModal()"
+              style="background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0;"
+              title="Reorder Categories">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path
+                  d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+                </path>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Category Order Modal -->
+          <div id="categoryOrderModal" class="modal-overlay">
+            <div class="modal" style="max-width: 500px;">
+              <div class="modal-header">
+                <h3>Reorder Categories</h3>
+                <button onclick="closeCategoryOrderModal()"
+                  style="background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 1.5rem;">&times;</button>
+              </div>
+              <div class="modal-body">
+                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">Use
+                  Up/Down arrows to reorder.</p>
+                <div id="categoryOrderList"
+                  style="max-height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem;">
+                  <!-- List injected by JS -->
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button class="btn btn-primary" onclick="closeCategoryOrderModal()">Done</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="products-grid" id="productsGrid">
+            <!-- Products injected by JS -->
+          </div>
+        </div>
+
+        <!-- Right: Cart & Calculation -->
+        <div class="cart-panel">
+          <div class="cart-resize-handle" aria-hidden="true"></div>
+          <!-- Cart Tabs -->
+          <div id="cartTabs">
+            <!-- Tabs injected by JS -->
+            <button class="cart-tab-plus" onclick="createNewCart()" title="Add New Cart">+</button>
+          </div>
+
+          <div class="modal-header"
+            style="padding: 0.45rem 1rem; background: var(--bg-card); display: flex; align-items: center; gap: 0.5rem;">
+            <button class="mobile-only" onclick="toggleCartPanel()"
+              style="background: none; border: none; color: var(--accent-primary); font-weight: 700; display: none;">
+              Menu</button>
+            <button id="customerInfoBtn" type="button" onclick="toggleCustomerInfo()"
+              style="display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.3rem 0.7rem; font-size: 0.82rem; font-weight: 600; border-radius: 0.45rem; border: 1px solid var(--border-light); background: var(--bg-secondary); color: var(--text-secondary); cursor: pointer; white-space: nowrap; transition: all 0.15s; flex-shrink: 0;"
+              onmouseenter="this.style.borderColor='var(--accent-primary)';this.style.color='var(--accent-primary)'"
+              onmouseleave="this.style.borderColor='var(--border-light)';this.style.color='var(--text-secondary)'"><span
+                id="customerInfoLabel">👤</span><span id="customerInfoArrow" aria-hidden="true">▼</span></button>
+            <span id="customerDisplayName"
+              style="flex: 1; font-size: 0.82rem; font-weight: 600; color: var(--accent-success); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
+          </div>
+
+          <div id="customerInfoAccordion" class="customer-info-accordion" aria-hidden="true">
+            <div class="customer-info-content">
+              <div class="customer-info-row">
+                <label for="customerName">Name</label>
+                <div class="customer-field-wrap">
+                  <input type="text" id="customerName" class="form-input" maxlength="50" autocomplete="off">
+                  <button type="button" class="customer-info-clear" onclick="clearCustomerField('customerName')"
+                    aria-label="Clear name">&times;</button>
+                </div>
+              </div>
+              <div class="customer-info-row">
+                <label for="customerAddress">Address</label>
+                <div class="customer-field-wrap">
+                  <input type="text" id="customerAddress" class="form-input" maxlength="100" autocomplete="off">
+                  <button type="button" class="customer-info-clear" onclick="clearCustomerField('customerAddress')"
+                    aria-label="Clear address">&times;</button>
+                </div>
+              </div>
+              <div class="customer-info-row">
+                <label for="customerPhone">Phone</label>
+                <div class="customer-field-wrap">
+                  <input type="tel" id="customerPhone" class="form-input" inputmode="numeric" pattern="[0-9]*"
+                    maxlength="20" autocomplete="off"
+                    oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 20)">
+                  <button type="button" class="customer-info-clear" onclick="clearCustomerField('customerPhone')"
+                    aria-label="Clear phone">&times;</button>
+                </div>
+              </div>
+              <div id="customerLookupInfo" class="customer-lookup-info"
+                style="display: none; padding: 0.45rem 0.65rem; border-radius: 0.45rem; font-size: 0.78rem; margin: -0.1rem 0 0.4rem; line-height: 1.35; background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.25);">
+              </div>
+              <div class="customer-info-row">
+                <label for="customerPAN">PAN</label>
+                <div class="customer-field-wrap">
+                  <input type="tel" id="customerPAN" class="form-input" inputmode="numeric" pattern="[0-9]*" maxlength="9"
+                    autocomplete="off" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 9)">
+                  <button type="button" class="customer-info-clear" onclick="clearCustomerField('customerPAN')"
+                    aria-label="Clear PAN">&times;</button>
+                </div>
+              </div>
+              <div
+                style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.35rem; padding-top: 0.35rem; border-top: 1px dashed var(--border-light);">
+                <input type="checkbox" id="generateVatInvoice"
+                  style="cursor: pointer; width: 16px; height: 16px; accent-color: var(--accent-primary);">
+                <label for="generateVatInvoice"
+                  style="cursor: pointer; user-select: none; font-size: 0.8rem; font-weight: 600; color: var(--text-primary); margin: 0;">Generate
+                  VAT Invoice</label>
+              </div>
+            </div>
+          </div>
+
+          <div class="cart-items" id="cartItems">
+            <!-- Cart Items injected by JS -->
+            <div style="text-align: center; color: var(--text-muted); margin-top: 2rem;">
+              Empty Cart
+            </div>
+          </div>
+
+          <div class="cart-footer">
+            <div class="flex-between" style="margin-bottom: 0.2rem;">
+              <span style="color: var(--text-secondary);">Subtotal</span>
+              <span id="subTotal">Rs. 0.00</span>
+            </div>
+            <div class="flex-between" style="margin-bottom: 0.2rem;">
+              <span style="color: var(--text-secondary);">Discount</span>
+              <span id="discount">Rs. 0.00</span>
+            </div>
+            <div class="flex-between" style="margin-bottom: 0.75rem; font-size: 1.1rem; font-weight: 700;">
+              <span>Total</span>
+              <span id="grandTotal" style="color: var(--accent-success);">Rs. 0.00</span>
+            </div>
+
+            <div style="margin-top: 0.4rem;">
+              <div class="payment-methods">
+                <div id="payCashBtn" class="payment-btn" onclick="setPaymentMode('CASH', this)">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z">
+                    </path>
+                  </svg>
+                  <span>Cash</span>
+                </div>
+
+                <div id="payQRBtn" class="payment-btn" onclick="setPaymentMode('QR CODE', this)">
+                  <div class="qr-logo-container">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"
+                      stroke-linejoin="round">
+                      <path d="M3 7V5a2 2 0 0 1 2-2h2"></path>
+                      <path d="M17 3h2a2 2 0 0 1 2 2v2"></path>
+                      <path d="M21 17v2a2 2 0 0 1-2 2h-2"></path>
+                      <path d="M7 21H5a2 2 0 0 1-2-2v-2"></path>
+                      <rect x="7" y="7" width="4" height="4" rx="1"></rect>
+                      <rect x="13" y="7" width="4" height="4" rx="1"></rect>
+                      <rect x="7" y="13" width="4" height="4" rx="1"></rect>
+                      <path d="M15 15h2v2h-2z"></path>
+                    </svg>
+                  </div>
+                  <span>QR CODE</span>
+                </div>
+                <div id="payCreditBtn" class="payment-btn" onclick="setPaymentMode('CREDIT', this)">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+
+                  </svg>
+                  <span>Credit (AR)</span>
+                </div>
+              </div>
+              <input type="hidden" id="paymentMode" value="">
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Mobile Floating Cart Button -->
+    <button class="mobile-cart-fab mobile-only" id="mobileCartFab" onclick="toggleCartPanel()">
+      Add to Order
+    </button>
+  </div>
+
+  <!-- Print Styles (Moved outside printableArea to prevent printing) -->
+  <style>
+    @media print {
+
+      html,
+      body {
+        width: 100%;
+        height: auto;
+        margin: 0;
+        padding: 0;
+        overflow: visible;
+      }
+
+      body>* {
+        display: none !important;
+      }
+
+      #printableArea {
+        display: block !important;
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: auto;
+        margin: 0;
+        padding: 0;
+        overflow: visible;
+      }
+
+      #printableArea>div {
+        height: auto !important;
+        overflow: visible !important;
+        page-break-inside: auto;
+      }
+
+      #printableArea * {
+        visibility: visible !important;
+      }
+
+      #printableArea table {
+        display: table !important;
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      #printableArea thead {
+        display: table-header-group !important;
+      }
+
+      #printableArea tbody {
+        display: table-row-group !important;
+      }
+
+      #printableArea tr {
+        display: table-row !important;
+        page-break-inside: avoid;
+      }
+
+      .hidden-print {
+        display: none !important;
+      }
+
+      #printableArea tr.hidden-print,
+      #printableArea tr[style*="display: none"],
+      #printableArea tr[style*="display:none"] {
+        display: none !important;
+      }
+
+      #printableArea th,
+      #printableArea td {
+        display: table-cell !important;
+        padding: 0 1px;
+        line-height: 1.1;
+        border: none !important;
+      }
+
+      #printableArea>div {
+        container-type: inline-size;
+        font-size: 3.6vw !important;
+      }
+
+      #p-totalWords-label,
+      #p-totalWords {
+        font-size: var(--receipt-words-font-size, 12px) !important;
+        line-height: 1.1 !important;
+        word-break: normal !important;
+        overflow-wrap: break-word !important;
+        white-space: normal !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+
+      #p-totalWords-row {
+        line-height: 1.1 !important;
+        margin-top: 1px !important;
+        margin-bottom: 1px !important;
+        padding-bottom: 1px !important;
+      }
+
+      #p-footer {
+        font-size: var(--receipt-footer-font-size, 8px) !important;
+        word-break: normal !important;
+        overflow-wrap: break-word !important;
+        white-space: normal !important;
+        max-width: 100% !important;
+      }
+
+      #p-metaTable,
+      #p-metaTable td,
+      #p-metaTable span {
+        font-size: var(--receipt-meta-font-size, 10px) !important;
+      }
+
+      #p-headerTable,
+      #p-headerTable th,
+      #p-snLabel,
+      #p-particularsLabel,
+      #p-qtyLabel,
+      #p-rateLabel,
+      #p-amtLabel {
+        font-size: var(--receipt-th-font-size, 10px) !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: clip !important;
+      }
+
+      #p-itemsTable,
+      #p-itemsTable td,
+      #p-itemsTable span,
+      #p-totalsTable,
+      #p-totalsTable td,
+      #p-totalsTable span {
+        font-size: var(--receipt-td-font-size, 10px) !important;
+      }
+
+      #printableArea {
+        padding-top: 4mm !important;
+      }
+
+      #p-storeName {
+        font-size: var(--receipt-header-font-size, 30px) !important;
+        margin-top: 2mm !important;
+        padding-top: 1mm !important;
+      }
+
+      #p-address,
+      #p-vat-row,
+      #p-phone-row {
+        font-size: var(--receipt-header-info-font-size, 11px) !important;
+        word-break: normal !important;
+        overflow-wrap: break-word !important;
+        white-space: normal !important;
+        max-width: 100% !important;
+      }
+
+      #p-bill-title {
+        font-size: var(--receipt-bill-title-font-size, 13px) !important;
+      }
+
+      @page {
+        margin: 0mm;
+      }
+    }
+  </style>
+
+  <!-- Hidden Printable Receipt Area -->
+  <div id="printableArea" style="display: none;">
+    <div
+      style="width: 100%; padding: 0; color: #000; background: white; font-family: 'Courier New', monospace; font-size: 11px; font-weight: normal; line-height: 1.25; word-wrap: break-word; word-break: normal; overflow-wrap: break-word;">
+      <div style="max-width: 100%; margin: 0 auto; box-sizing: border-box; padding: 4mm 1mm 0 1mm;">
+        <!-- Header -->
+        <div style="text-align: center; margin-bottom: 4px; padding-top: 2mm;">
+          <div id="p-storeName"
+            style="font-family: Arial, Helvetica, sans-serif; font-size: 10em; line-height: 1.20; margin-bottom: 3px; font-weight: 800; color: #000; letter-spacing: 0; word-break: normal; overflow-wrap: normal; white-space: nowrap; max-width: 100%;">
+            STORE NAME</div>
+          <div id="p-address"
+            style="font-family: normal; font-size: 1.1em; margin-bottom: 2px; color: #000; font-weight: 400; word-break: normal; overflow-wrap: break-word; white-space: normal; max-width: 100%;">
+            Address Line 1</div>
+          <div id="p-phone-row"
+            style="font-family:normal; font-size: 1.1em; margin-bottom: 2px; color: #000; font-weight: 400; word-break: normal; overflow-wrap: break-word; white-space: normal; max-width: 100%;">
+            Tel :
+            <span style="font-weight: normal;" id="p-phone">...</span>
+          </div>
+          <div id="p-vat-row"
+            style="font-family: normal ; font-size: 1.1em; margin-bottom: 4px; color: #000; font-weight: 400; word-break: normal; overflow-wrap: break-word; white-space: normal; max-width: 100%;">
+            <span id="p-vat-label">PAN</span> No : <span style="font-weight:normal;" id="p-vatNo">...</span>
+          </div>
+          <div id="p-bill-title"
+            style="font-size: 3em; font-weight:600;  font-family : Arial, Helvetica, sans-serif; margin-top: 5px; margin-bottom: 5px; text-transform: uppercase; color: #000; border-bottom: 1px dashed #000; padding-bottom: 4px;">
+            ABBREVIATED TAX INVOICE</div>
+        </div>
+
+        <!-- Metadata -->
+        <table id="p-metaTable"
+          style="width: 100%; font-size: var(--receipt-meta-font-size, 10px); border-collapse: collapse; font-family: inherit; color: #000; line-height: 1.15;">
+          <tr>
+            <td style="width: 30%; vertical-align: top; padding: 0.5px 0; font-weight: normal;">Bill Date</td>
+            <td style="width: 4%; text-align: center; vertical-align: top; padding: 0.5px 0;"> : </td>
+            <td style="width: 66%; vertical-align: top; padding: 0.5px 0;">
+              <span id="p-date-ad" style="font-style: italic;"></span>
+              <span id="p-date-bs" style="font-style: italic;"></span>
+            </td>
+          </tr>
+          <tr>
+            <td style="width: 30%; padding: 0.5px 0; font-weight: normal;">Bill No</td>
+            <td style="width: 4%; text-align: center; padding: 0.5px 0;"> : </td>
+            <td style="width: 66%; padding: 0.5px 0;"><span id="p-billNo" style="font-weight: normal;"></span></td>
+          </tr>
+
+          <tr id="p-customer-row">
+            <td style="width: 30%; padding: 0.5px 0; font-weight: normal;">Bill To</td>
+            <td style="width: 4%; text-align: center; padding: 0.5px 0;"> : </td>
+            <td style="width: 66%; padding: 0.5px 0;"><span id="p-customer"></span></td>
+          </tr>
+          <tr id="p-customerAddress-row">
+            <td style="width: 30%; padding: 0.5px 0; font-weight: normal;">Address</td>
+            <td style="width: 4%; text-align: center; padding: 0.5px 0;"> : </td>
+            <td style="width: 66%; padding: 0.5px 0;"><span id="p-customerAddress"></span></td>
+          </tr>
+
+          <tr id="p-customerPhone-row">
+            <td style="width: 30%; padding: 0.5px 0; font-weight: normal;">Phone No</td>
+            <td style="width: 4%; text-align: center; padding: 0.5px 0;"> : </td>
+            <td style="width: 66%; padding: 0.5px 0;"><span id="p-customerPhone"></span></td>
+          </tr>
+
+          <tr id="p-customerpan-row">
+            <td style="width: 30%; padding: 0.5px 0; font-weight: normal;">PAN No</td>
+            <td style="width: 4%; text-align: center; padding: 0.5px 0;"> : </td>
+            <td style="width: 66%; padding: 0.5px 0;"><span id="p-customerpan"></span></td>
+          </tr>
+          <tr>
+            <td style="width: 30%; padding: 0.5px 0; font-weight: normal;">Payment</td>
+            <td style="width: 4%; text-align: center; padding: 0.5px 0;"> : </td>
+            <td style="width: 66%; padding: 0.5px 0;"><span id="p-payMode"></span></td>
+          </tr>
+          <tr>
+            <td style="width: 30%; padding: 0.5px 0; font-weight: normal;">Cashier</td>
+            <td style="width: 4%; text-align: center; padding: 0.5px 0;"> : </td>
+            <td style="width: 66%; padding: 0.5px 0;"><span id="p-cashier"></span></td>
+          </tr>
+        </table>
+
+        <div style="border-top: 1px dashed #000; margin: 4px 0 0 0;"></div>
+
+        <!-- Items Header -->
+        <table id="p-headerTable"
+          style="width: 100%; font-size: var(--receipt-th-font-size, 10px); border-collapse: collapse; font-family: inherit; table-layout: fixed; color:#010203;">
+
+          <thead>
+            <tr style="font-weight: normal;">
+              <th id="p-snLabel"
+                style="padding: 4px 1px 4px 0; text-align: left; width: 7%; text-transform: none !important; font-weight: normal; color:#010203; white-space: nowrap;">
+                Sn
+              </th>
+
+              <th id="p-particularsLabel"
+                style="padding: 4px 2px 4px 0; text-align: left; width: 37%; text-transform: none !important; font-weight: normal; color:#010203; white-space: nowrap;">
+                PARTICULARS</th>
+              <th id="p-qtyLabel"
+                style="padding: 4px 2px; text-align: right; width: 17%; text-transform: none !important; font-weight: normal; color:#010203; white-space: nowrap;">
+                QTY</th>
+              <th id="p-rateLabel"
+                style="padding: 4px 2px; text-align: right; width: 18%; text-transform: none !important; font-weight: normal; color:#010203; white-space: nowrap;">
+                RATE</th>
+              <th id="p-amtLabel"
+                style="padding: 4px 0 4px 2px; text-align: right; width: 21%; text-transform: none !important; font-weight: normal; color:#010203; white-space: nowrap;">
+                AMT</th>
+            </tr>
+          </thead>
+
+        </table>
+        <div style="border-top: 1px dashed #000; margin: 0;"></div>
+
+        <!-- Items List -->
+        <table id="p-itemsTable"
+          style="width: 100%; font-size: var(--receipt-td-font-size, 10px); border-collapse: collapse; font-family: inherit; table-layout: fixed; color: #000; font-weight: normal;">
+          <tbody id="p-items">
+            <!-- Content will be injected -->
+          </tbody>
+        </table>
+
+        <!-- Totals -->
+        <div style="border-top: 1px dashed #000; margin: 0;"></div>
+        <table id="p-totalsTable"
+          style="width: 100%; font-size: var(--receipt-td-font-size, 10px); border-collapse: collapse; font-family: inherit; table-layout: fixed; margin-top: 2px; color: #000; font-weight: normal;">
+          <tr id="p-gross-row" style="font-weight: normal;">
+            <td colspan="3" style="width: 56%; text-align: left; padding: 1.5px 0;">Gross Amount</td>
+            <td style="width: 10%; text-align: center; padding: 1.5px 0;">:</td>
+            <td style="width: 34%; text-align: right; padding: 1.5px 0; white-space: nowrap;"><span
+                id="p-gross">0.00</span></td>
+          </tr>
+          <tr id="p-discount-row" style="display: none; font-weight: normal;">
+            <td colspan="3" style="width: 56%; text-align: left; padding: 1.5px 0;">Discount</td>
+            <td style="width: 10%; text-align: center; padding: 1.5px 0;">:</td>
+            <td style="width: 34%; text-align: right; padding: 1.5px 0; white-space: nowrap;"><span
+                id="p-discount">0.00</span></td>
+          </tr>
+          <tr id="p-taxable-row" style="font-weight: normal;">
+            <td colspan="3" style="width: 56%; text-align: left; padding: 1.5px 0;">Taxable</td>
+            <td style="width: 10%; text-align: center; padding: 1.5px 0;">:</td>
+            <td style="width: 34%; text-align: right; padding: 1.5px 0; white-space: nowrap;"><span
+                id="p-taxable">0.00</span></td>
+          </tr>
+          <tr id="p-nontaxable-row" style="font-weight: normal;">
+            <td colspan="3" style="width: 56%; text-align: left; padding: 1.5px 0;">NonTaxable</td>
+            <td style="width: 10%; text-align: center; padding: 1.5px 0;">:</td>
+            <td style="width: 34%; text-align: right; padding: 1.5px 0; white-space: nowrap;"><span
+                id="p-nontaxable">0.00</span></td>
+          </tr>
+          <tr id="p-vat-breakdown-row" style="font-weight: normal;">
+            <td id="p-vat-breakdown-label" colspan="3" style="width: 56%; text-align: left; padding: 1.5px 0;">VAT 13%
+            </td>
+            <td style="width: 10%; text-align: center; padding: 1.5px 0;">:</td>
+            <td style="width: 34%; text-align: right; padding: 1.5px 0; white-space: nowrap;"><span
+                id="p-vatAmount">0.00</span></td>
+          </tr>
+          <tr id="p-net-row" style="font-weight: normal;">
+            <td id="p-net-label" colspan="3"
+              style="text-align: left; padding: 1.5px 0; line-height: 1.1; font-weight: normal;">
+              Net Amount</td>
+            <td style="width: 10%; text-align: center; padding: 1.5px 0;">:</td>
+            <td id="p-net-total-cell"
+              style="width: 34%; text-align: right; padding: 1.5px 0; font-weight: normal; white-space: nowrap;"><span
+                id="p-total">0.00</span></td>
+          </tr>
+          <tr id="p-tender-divider-row">
+            <td colspan="5" style="padding: 0;">
+              <div style="border-top: 1px dashed #000; margin: 2px 0;"></div>
+            </td>
+          </tr>
+          <tr id="p-tender-row" style="font-weight: normal;">
+            <td colspan="3" style="width: 56%; text-align: left; padding: 1.5px 0;">Tender</td>
+            <td style="width: 10%; text-align: center; padding: 1.5px 0;">:</td>
+            <td style="width: 34%; text-align: right; padding: 1.5px 0; white-space: nowrap;"><span
+                id="p-tendered">0.00</span></td>
+          </tr>
+          <tr id="p-change-row" style="font-weight: normal;">
+            <td colspan="3" style="width: 56%; text-align: left; padding: 1.5px 0;">Change</td>
+            <td style="width: 10%; text-align: center; padding: 1.5px 0;">:</td>
+            <td style="width: 34%; text-align: right; padding: 1.5px 0; white-space: nowrap;"><span
+                id="p-change">0.00</span></td>
+          </tr>
+          <tr id="p-qty-divider-row">
+            <td colspan="5" style="padding: 0;">
+              <div style="border-top: 1px dashed #000; margin: 2px 0;"></div>
+            </td>
+          </tr>
+          <tr id="p-total-qty-row" style="font-weight: normal;">
+            <td colspan="3" style="width: 56%; text-align: left; padding: 1.5px 0;">Total Qty</td>
+            <td style="width: 10%; text-align: center; padding: 1.5px 0;">:</td>
+            <td style="width: 34%; text-align: right; padding: 1.5px 0; white-space: nowrap;"><span
+                id="p-totalQty">0.00</span></td>
+          </tr>
+        </table>
+        <div style="border-top: 1px dashed #000; margin: 2px 0 2px 0;"></div>
+
+        <div id="p-totalWords-row"
+          style="margin: 1px 0; border-bottom: 1px dashed #000; padding: 1px 0; line-height: 1.15; font-size: inherit;">
+          <span id="p-totalWords-label"
+            style="font-weight: normal; color: #000; font-size: inherit; line-height: inherit; word-break: normal; overflow-wrap: break-word; white-space: normal; margin: 0; padding: 0;">In
+            Words: </span><span id="p-totalWords"
+            style="line-height: inherit; font-size: inherit; word-wrap: normal; word-break: normal; overflow-wrap: break-word; white-space: normal; color: #000; font-weight: normal; margin: 0; padding: 0;"></span>
+        </div>
+
+        <!-- Footer -->
+        <div
+          style="text-align: center; margin-top: 0px; font-size: 0.9em; margin-bottom: 1px; color: #000; font-weight: normal; word-wrap: break-word; word-break: normal; overflow-wrap: break-word; white-space: normal; max-width: 100%;"
+          id="p-footer">Thank you for your visit!</div>
+        <div style="border-top: 1px dashed #000; margin: 5px 0;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Smart Bulk Entry Modal -->
+  <div id="smartBulkModal" class="modal-overlay" onclick="closeSmartBulkModal()">
+    <div class="modal" style="max-width: 550px;" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <h3 id="bulkProductName" style="margin: 0; font-size: 1.25rem;">Product Name</h3>
+          <div id="bulkProductRetail" style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;">Retail
+            Price: Rs. 0.00</div>
+          <div id="bulkProductStock" style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;">
+            Available Stock: 0</div>
+        </div>
+
+        <!-- Real-time Subtotal -->
+        <div
+          style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); padding: 0.5rem 1rem; border-radius: 0.5rem; text-align: center;">
+          <div style="font-size: 0.8rem; color: #10b981; font-weight: 500; margin-bottom: 0.15rem;">Subtotal
+          </div>
+          <div id="bulkSubtotal" style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary);">Rs.
+            0.00</div>
+        </div>
+
+        <button onclick="closeSmartBulkModal()" class="close-btn">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 1.5rem;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+
+
+          <!-- Quantity Input -->
+          <div>
+            <label
+              style="display: block; font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Quantity</label>
+            <div style="display: flex; align-items: stretch; gap: 0.5rem; margin-bottom: 1rem;">
+              <button class="bulk-quick-btn"
+                style="flex: 0.5; padding: 0.5rem 0; font-size: 1.5rem; font-weight: 700; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.05);"
+                onclick="addBulkQty(-1, true)">-</button>
+              <input type="number" id="bulkQty" step="0.1" min="0.1" placeholder="Qty"
+                style="flex: 4; width: 100%; padding: 1.25rem 0.5rem; font-size: 2rem; font-weight: 800; text-align: center; border-radius: 0.75rem; border: 2px solid var(--border-light); background: var(--bg-secondary); color: #10b981; outline: none; transition: all 0.2s; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);"
+                oninput="handleBulkQtyInput()">
+              <button class="bulk-quick-btn"
+                style="flex: 0.5; padding: 0.5rem 0; font-size: 1.5rem; font-weight: 700; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.05);"
+                onclick="addBulkQty(1, true)">+</button>
+            </div>
+
+            <!-- Quick Buttons -->
+            <div style="margin-top: 0.75rem;">
+              <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.4rem; margin-bottom: 0.4rem;">
+                <button class="bulk-quick-btn" onclick="addBulkQty(0.1)">0.1</button>
+                <button class="bulk-quick-btn" onclick="addBulkQty(0.2)">0.2</button>
+                <button class="bulk-quick-btn" onclick="addBulkQty(0.3)">0.3</button>
+                <button class="bulk-quick-btn" onclick="addBulkQty(0.4)">0.4</button>
+                <button class="bulk-quick-btn" onclick="addBulkQty(0.5)">0.5</button>
+              </div>
+              <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.4rem; margin-bottom: 0.4rem;">
+                <button class="bulk-quick-btn" onclick="addBulkQty(0.6)">0.6</button>
+                <button class="bulk-quick-btn" onclick="addBulkQty(0.7)">0.7</button>
+                <button class="bulk-quick-btn" onclick="addBulkQty(0.8)">0.8</button>
+                <button class="bulk-quick-btn" onclick="addBulkQty(0.9)">0.9</button>
+
+              </div>
+
+
+              <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.4rem; margin-bottom: 0.4rem;">
+                <button class="bulk-quick-btn" onclick="addBulkQty(1)">1</button>
+                <button class="bulk-quick-btn" onclick="addBulkQty(2)">2</button>
+                <button class="bulk-quick-btn" onclick="addBulkQty(3)">3</button>
+                <button class="bulk-quick-btn" onclick="addBulkQty(4)">4</button>
+              </div>
+              <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.4rem;">
+                <button class="bulk-quick-btn" onclick="addBulkQty(5)">5</button>
+                <button class="bulk-quick-btn" onclick="addBulkQty(10)">10</button>
+                <button class="bulk-quick-btn" onclick="addBulkQty(15)">15</button>
+                <button class="bulk-quick-btn" onclick="addBulkQty(25)">25</button>
+              </div>
+              <button class="bulk-quick-btn"
+                style="width: 100%; margin-top: 0.4rem; background: var(--bg-primary); border-style: dashed;"
+                onclick="document.getElementById('bulkQty').value = ''; handleBulkQtyInput();">Clear
+                Qty</button>
+            </div>
+          </div>
+
+          <!-- Rate Input -->
+          <div>
+            <label
+              style="display: block; font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Rate
+              (Rs. per unit)</label>
+            <div style="display:flex; align-items:stretch; gap:0.5rem;">
+              <button type="button" class="bulk-quick-btn" aria-label="Decrease rate by 1" title="Decrease rate by 1"
+                style="min-width:32px; width:32px; padding:0; font-size:1.1rem; line-height:1;"
+                onclick="adjustBulkRate(-1)">−</button>
+              <input type="number" id="bulkRate" step="1" min="0" placeholder="0"
+                style="width:100%; min-width:0; padding:1.25rem 0.5rem; font-size:2rem; font-weight:800; text-align:center; border-radius:0.75rem; border:2px solid var(--border-light); background:var(--bg-secondary); color:var(--text-primary); outline:none; transition:all 0.2s; box-shadow:inset 0 2px 4px rgba(0,0,0,0.1);"
+                oninput="handleBulkRateInput()">
+              <button type="button" class="bulk-quick-btn" aria-label="Increase rate by 1" title="Increase rate by 1"
+                style="min-width:32px; width:32px; padding:0; font-size:1.1rem; line-height:1;"
+                onclick="adjustBulkRate(1)">+</button>
+            </div>
+
+
+            <!-- Quick Rate Buttons -->
+            <div style="margin-top: 0.75rem;">
+              <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.4rem; margin-bottom: 0.4rem;">
+                <button class="bulk-quick-btn" onclick="setBulkRateOffset(-5)">5</button>
+                <button class="bulk-quick-btn" onclick="setBulkRateOffset(-10)">10</button>
+                <button class="bulk-quick-btn" onclick="setBulkRateOffset(-15)">15</button>
+                <button class="bulk-quick-btn" onclick="setBulkRateOffset(-20)">20</button>
+              </div>
+
+              <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.4rem;">
+                <button class="bulk-quick-btn" onclick="setBulkRateOffset(-25)">25</button>
+                <button class="bulk-quick-btn" onclick="setBulkRateOffset(-50)">50</button>
+                <button class="bulk-quick-btn" onclick="setBulkRateOffset(-75)">75</button>
+                <button class="bulk-quick-btn" onclick="setBulkRateOffset(-100)">100</button>
+              </div>
+
+
+              <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.4rem; margin-bottom: 0.4rem;">
+                <button class="bulk-quick-btn" onclick="setBulkRateOffset(5)">-5</button>
+                <button class="bulk-quick-btn" onclick="setBulkRateOffset(10)">-10</button>
+                <button class="bulk-quick-btn" onclick="setBulkRateOffset(15)">-15</button>
+                <button class="bulk-quick-btn" onclick="setBulkRateOffset(20)">-20</button>
+              </div>
+              <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.4rem;">
+                <button class="bulk-quick-btn" onclick="setBulkRateOffset(25)">-25</button>
+                <button class="bulk-quick-btn" onclick="setBulkRateOffset(50)">-50</button>
+                <button class="bulk-quick-btn" onclick="setBulkRateOffset(75)">-75</button>
+                <button class="bulk-quick-btn" onclick="setBulkRateOffset(100)">-100</button>
+              </div>
+
+
+              <button class="bulk-quick-btn"
+                style="width: 100%; margin-top: 0.4rem; background: var(--bg-primary); border-style: dashed;"
+                onclick="document.getElementById('bulkRate').value = ''; handleBulkRateInput();">Clear
+                Rate</button>
+            </div>
+          </div>
+        </div>
+        <!-- Real-time Subtotal -->
+
+      </div>
+      <div class="modal-footer"
+        style="display: grid; grid-template-columns: minmax(130px, 1fr) 1fr 1fr; gap: 0.75rem; align-items: end;">
+        <div>
+          <label
+            style="display:flex; justify-content:space-between; align-items:center; font-size:0.72rem; color:var(--text-secondary); margin:0 0 0.3rem; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">Amount
+            (Reverse Qty)
+            <button type="button" onclick="document.getElementById('bulkAmount').value = ''; calculateReverseBulkQty();"
+              style="padding:0; border:0; background:none; color:var(--accent-primary); cursor:pointer; font:inherit; text-transform:none; letter-spacing:0;">Clear</button>
+          </label>
+          <input type="number" id="bulkAmount" step="1" min="0" placeholder="0"
+            style="width:100%; padding:0.55rem 0.4rem; font-size:1rem; font-weight:800; text-align:center; border-radius:0.5rem; border:2px solid var(--border-light); background:var(--bg-secondary); color:#10b981; outline:none; transition:all 0.2s;"
+            oninput="calculateReverseBulkQty()">
+        </div>
+        <button class="btn"
+          style="background: var(--bg-primary); color: var(--text-secondary); border: 1px solid var(--border-light); justify-content: center; font-size: 1rem;"
+          onclick="closeSmartBulkModal()">Cancel</button>
+        <button class="btn"
+          style="background: #10b981; color: white; justify-content: center; font-size: 1rem; font-weight: 600;"
+          onclick="addSmartBulkToCart()">Add to Cart</button>
+      </div>
+    </div>
+  </div>
+
+
+
+  <!-- QR Popup Modal -->
+  <div id="qrPopupModal" class="modal-overlay" onclick="closeQRPopup()"
+    style="display: none; align-items: center; justify-content: center;">
+    <div class="modal" style="max-width: 420px; padding: 0; overflow: hidden; margin: auto;"
+      onclick="event.stopPropagation()">
+      <!-- Header -->
+      <div
+        style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.25rem; border-bottom: 1px solid var(--border-light);">
+        <h3 style="margin: 0; font-size: 1.1rem;">Payment QR Code</h3>
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <span id="qrCounter" style="font-size: 0.8rem; color: var(--text-muted);"></span>
+          <button onclick="closeQRPopup()"
+            style="background: none; border: none; color: var(--text-secondary); font-size: 1.5rem; cursor: pointer; line-height: 1; padding: 0;">&times;</button>
+        </div>
+      </div>
+      <!-- QR Display Area -->
+      <div
+        style="position: relative; display: flex; align-items: center; justify-content: center; padding: 1.5rem; min-height: 300px;">
+        <!-- Prev Arrow -->
+        <button id="qrPrevBtn" onclick="navigateQR(-1)"
+          style="position: absolute; left: 0.5rem; top: 50%; transform: translateY(-50%); width: 36px; height: 36px; border-radius: 50%; background: var(--bg-secondary); border: 1px solid var(--border-light); color: var(--text-primary); font-size: 1.25rem; cursor: pointer; display: none; align-items: center; justify-content: center; z-index: 2;">&#8249;</button>
+        <!-- QR Image Container -->
+        <div id="qrModalImageContainer"
+          style="width: 260px; height: 260px; background: white; border-radius: 0.75rem; display: flex; align-items: center; justify-content: center; padding: 0.75rem; box-shadow: 0 4px 20px rgba(0,0,0,0.15);">
+          No QR Code Uploaded
+        </div>
+        <!-- Next Arrow -->
+        <button id="qrNextBtn" onclick="navigateQR(1)"
+          style="position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%); width: 36px; height: 36px; border-radius: 50%; background: var(--bg-secondary); border: 1px solid var(--border-light); color: var(--text-primary); font-size: 1.25rem; cursor: pointer; display: none; align-items: center; justify-content: center; z-index: 2;">&#8250;</button>
+      </div>
+      <!-- QR Label -->
+      <div id="qrLabelText"
+        style="text-align: center; padding: 0 1rem; font-size: 1rem; font-weight: 600; color: var(--text-primary); display: none;">
+      </div>
+      <!-- Dot Indicators -->
+      <div id="qrDots" style="display: flex; justify-content: center; gap: 0.4rem; padding: 0.5rem 1rem 0.75rem;">
+      </div>
+      <!-- Footer -->
+      <div style="text-align: center; padding: 0 1rem 1.25rem; color: var(--text-muted); font-size: 0.85rem;">
+        Scan
+        this QR to make payment</div>
+    </div>
+  </div>
+
+  <div id="businessCalculatorModal" class="modal-overlay" onclick="closeBusinessCalculator()"
+    style="display: none; align-items: center; justify-content: center; padding: 1rem;">
+    <div class="billing-calculator-modal" onclick="event.stopPropagation()">
+
+
+
+      <button type="button" onclick="closeBusinessCalculator()"
+        style="position: absolute; top: 0.6rem; right: 0.75rem; z-index: 20; background: none; border: none; color: var(--text-secondary); font-size: 1.5rem; cursor: pointer; line-height: 1; padding: 0;">&times;</button>
+
+      <div id="businessCalculatorContent" class="billing-calculator-frame">
+        <style>
+          #businessCalculatorContent {
+            --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            --color-background-primary: #ffffff;
+            --color-background-secondary: #f8fafc;
+            --color-background-info: rgba(51, 51, 51, .08);
+            --color-background-success: rgba(16, 185, 129, .12);
+            --color-background-danger: rgba(239, 68, 68, .12);
+            --color-text-primary: #0f172a;
+            --color-text-secondary: #475569;
+            --color-text-tertiary: #94a3b8;
+            --color-text-info: #333333;
+            --color-text-success: #10b981;
+            --color-text-danger: #ef4444;
+            --color-text-warning: #f59e0b;
+            --color-border-secondary: #cbd5e1;
+            --color-border-tertiary: #e2e8f0;
+            --color-border-info: #333333;
+            --color-border-danger: rgba(239, 68, 68, .35);
+            --border-radius-md: .5rem;
+            --border-radius-lg: .75rem;
+          }
+
+          #businessCalculatorContent[data-theme="dark"] {
+            --color-background-primary: #202224;
+            --color-background-secondary: #111315;
+            --color-background-info: rgba(255, 255, 255, .1);
+            --color-background-success: rgba(16, 185, 129, .16);
+            --color-background-danger: rgba(239, 68, 68, .16);
+            --color-text-primary: #ffffff;
+            --color-text-secondary: #cbd5e1;
+            --color-text-tertiary: #94a3b8;
+            --color-text-info: #ffffff;
+            --color-border-secondary: #334155;
+            --color-border-tertiary: #2f3338;
+            --color-border-info: #ffffff;
+          }
+
+          #businessCalculatorContent * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+          }
+
+          #businessCalculatorContent .calc-shell {
+            font-family: var(--font-sans);
+            max-width: 680px;
+            padding: 1rem 0 2rem;
+          }
+
+          #businessCalculatorContent .calc-top {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 1.25rem;
+          }
+
+          #businessCalculatorContent .calc-top-title {
+            font-size: 17px;
+            font-weight: 500;
+            color: var(--color-text-primary);
+          }
+
+          #businessCalculatorContent .calc-top-sub {
+            font-size: 12px;
+            color: var(--color-text-secondary);
+            margin-top: 2px;
+          }
+
+          #businessCalculatorContent .tab-bar {
+            display: flex;
+            gap: 0;
+            overflow-x: auto;
+            border-bottom: 0.5px solid var(--color-border-tertiary);
+            margin-bottom: 1.25rem;
+            scrollbar-width: none;
+          }
+
+          #businessCalculatorContent .tab-bar::-webkit-scrollbar {
+            display: none;
+          }
+
+          #businessCalculatorContent .tb {
+            padding: 8px 14px;
+            font-size: 12px;
+            font-weight: 500;
+            white-space: nowrap;
+            border: none;
+            background: transparent;
+            color: var(--color-text-secondary);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -1px;
+            transition: color .12s;
+          }
+
+          #businessCalculatorContent .tb.on {
+            color: var(--color-text-info);
+            border-bottom-color: var(--color-text-info);
+          }
+
+          #businessCalculatorContent .pg {
+            display: none;
+          }
+
+          #businessCalculatorContent .pg.on {
+            display: block;
+          }
+
+          #businessCalculatorContent .card {
+            background: var(--color-background-primary);
+            border: 0.5px solid var(--color-border-tertiary);
+            border-radius: var(--border-radius-lg);
+            padding: 1.25rem;
+            margin-bottom: 12px;
+          }
+
+          #businessCalculatorContent .card-title {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--color-text-secondary);
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            margin-bottom: 1rem;
+          }
+
+          #businessCalculatorContent .f {
+            margin-bottom: 12px;
+          }
+
+          #businessCalculatorContent .f:last-child {
+            margin-bottom: 0;
+          }
+
+          #businessCalculatorContent .f label {
+            display: block;
+            font-size: 12px;
+            color: var(--color-text-secondary);
+            margin-bottom: 4px;
+          }
+
+          #businessCalculatorContent .f input,
+          #businessCalculatorContent .f select {
+            width: 100%;
+            font-size: 14px;
+          }
+
+          #businessCalculatorContent .g2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+          }
+
+          #businessCalculatorContent .g3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+          }
+
+          #businessCalculatorContent .hint {
+            font-size: 11px;
+            color: var(--color-text-tertiary);
+            margin-top: 3px;
+          }
+
+          #businessCalculatorContent .sep {
+            border: none;
+            border-top: 0.5px solid var(--color-border-tertiary);
+            margin: 12px 0;
+          }
+
+          #businessCalculatorContent .res-box {
+            background: var(--color-background-secondary);
+            border-radius: var(--border-radius-md);
+            padding: .9rem 1rem;
+          }
+
+          #businessCalculatorContent .res-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            padding: 5px 0;
+            border-bottom: 0.5px solid var(--color-border-tertiary);
+          }
+
+          #businessCalculatorContent .res-row:last-child {
+            border-bottom: none;
+          }
+
+          #businessCalculatorContent .res-row .lb {
+            color: var(--color-text-secondary);
+          }
+
+          #businessCalculatorContent .res-row .vl {
+            font-weight: 500;
+            color: var(--color-text-primary);
+          }
+
+          #businessCalculatorContent .big-res {
+            text-align: center;
+            padding: .75rem 0;
+          }
+
+          #businessCalculatorContent .big-label {
+            font-size: 12px;
+            color: var(--color-text-secondary);
+            margin-bottom: 4px;
+          }
+
+          #businessCalculatorContent .big-val {
+            font-size: 28px;
+            font-weight: 500;
+          }
+
+          #businessCalculatorContent .green {
+            color: var(--color-text-success);
+          }
+
+          #businessCalculatorContent .red {
+            color: var(--color-text-danger);
+          }
+
+          #businessCalculatorContent .warn {
+            color: var(--color-text-warning);
+          }
+
+          #businessCalculatorContent .info {
+            color: var(--color-text-info);
+          }
+
+          #businessCalculatorContent .pills {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-top: 6px;
+          }
+
+          #businessCalculatorContent .pill {
+            padding: 4px 10px;
+            font-size: 12px;
+            border-radius: var(--border-radius-md);
+            border: 0.5px solid var(--color-border-secondary);
+            background: transparent;
+            color: var(--color-text-secondary);
+            cursor: pointer;
+            transition: background .1s;
+          }
+
+          #businessCalculatorContent .pill:hover {
+            background: var(--color-background-info);
+            color: var(--color-text-info);
+            border-color: var(--color-border-info);
+          }
+
+          #businessCalculatorContent .pill.on {
+            background: var(--color-background-info);
+            color: var(--color-text-info);
+            border-color: var(--color-border-info);
+          }
+
+          #businessCalculatorContent .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 8px;
+            margin-bottom: 12px;
+          }
+
+          #businessCalculatorContent .metric {
+            background: var(--color-background-secondary);
+            border-radius: var(--border-radius-md);
+            padding: .75rem .9rem;
+          }
+
+          #businessCalculatorContent .metric .ml {
+            font-size: 11px;
+            color: var(--color-text-secondary);
+            margin-bottom: 3px;
+          }
+
+          #businessCalculatorContent .metric .mv {
+            font-size: 18px;
+            font-weight: 500;
+            color: var(--color-text-primary);
+          }
+
+          #businessCalculatorContent .action-btn {
+            width: 100%;
+            padding: 9px;
+            font-size: 13px;
+            font-weight: 500;
+            border-radius: var(--border-radius-md);
+            border: 0.5px solid var(--color-border-info);
+            background: var(--color-background-info);
+            color: var(--color-text-info);
+            cursor: pointer;
+            margin-top: 8px;
+          }
+
+          #businessCalculatorContent .action-btn:hover {
+            opacity: .9;
+          }
+
+          #businessCalculatorContent .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            max-height: 260px;
+            overflow-y: auto;
+          }
+
+          #businessCalculatorContent .hist-item {
+            background: var(--color-background-secondary);
+            border-radius: var(--border-radius-md);
+            padding: .6rem .9rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+          }
+
+          #businessCalculatorContent .hist-item .hv {
+            font-weight: 500;
+            color: var(--color-text-primary);
+          }
+
+          #businessCalculatorContent .hist-item .ht {
+            font-size: 11px;
+            color: var(--color-text-tertiary);
+          }
+
+          #businessCalculatorContent .empty-hist {
+            font-size: 13px;
+            color: var(--color-text-tertiary);
+            text-align: center;
+            padding: 1.5rem;
+          }
+
+          #businessCalculatorContent .split-person-row {
+            display: grid;
+            grid-template-columns: 1fr 80px 80px 24px;
+            gap: 6px;
+            align-items: center;
+            margin-bottom: 6px;
+          }
+
+          #businessCalculatorContent .split-person-row input {
+            font-size: 13px;
+          }
+
+          #businessCalculatorContent .add-person {
+            font-size: 13px;
+            color: var(--color-text-info);
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            margin-top: 4px;
+          }
+
+          #businessCalculatorContent .rm {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--color-text-danger);
+            font-size: 15px;
+            padding: 0;
+          }
+
+          #businessCalculatorContent .basic-display {
+            background: var(--color-background-secondary);
+            border-radius: var(--border-radius-md);
+            padding: 16px 18px;
+            margin-bottom: 10px;
+            min-height: 130px;
+            text-align: right;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 6px;
+          }
+
+          #businessCalculatorContent .basic-expr {
+            font-size: 36px;
+            font-weight: 600;
+            color: var(--color-text-primary);
+            min-height: 44px;
+            word-break: break-all;
+            line-height: 1.2;
+            outline: none;
+            -webkit-tap-highlight-color: transparent;
+          }
+
+          #businessCalculatorContent .basic-num {
+            font-size: 22px;
+            font-weight: 400;
+            color: var(--color-text-secondary);
+            word-break: break-all;
+            line-height: 1.3;
+          }
+
+          #businessCalculatorContent .btn-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 7px;
+          }
+
+          #businessCalculatorContent .bb {
+            padding: 14px 4px;
+            border-radius: var(--border-radius-md);
+            border: 0.5px solid var(--color-border-tertiary);
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 500;
+            background: var(--color-background-primary);
+            color: var(--color-text-primary);
+            transition: filter .08s, transform .06s;
+          }
+
+          #businessCalculatorContent .bb:active {
+            transform: scale(.93);
+            filter: brightness(.85);
+          }
+
+          #businessCalculatorContent .bb.op {
+            background: var(--color-background-info);
+            color: var(--color-text-info);
+            border-color: var(--color-border-info);
+          }
+
+          #businessCalculatorContent .bb.eq {
+            background: var(--color-text-info);
+            color: #fff;
+            border-color: var(--color-text-info);
+          }
+
+          #businessCalculatorContent .bb.ac {
+            background: var(--color-background-danger);
+            color: var(--color-text-danger);
+            border-color: var(--color-border-danger);
+          }
+
+          #businessCalculatorContent .bb.fn {
+            background: var(--color-background-secondary);
+            color: var(--color-text-secondary);
+          }
+
+          #businessCalculatorContent .bb.w2 {
+            grid-column: span 2;
+          }
+
+          #businessCalculatorContent .bb.w3 {
+            grid-column: span 3;
+          }
+
+          #businessCalculatorContent .progress-bar-wrap {
+            height: 8px;
+            background: var(--color-background-secondary);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 4px 0;
+          }
+
+          #businessCalculatorContent .progress-bar {
+            height: 100%;
+            border-radius: 4px;
+            transition: width .3s;
+          }
+
+          #businessCalculatorContent .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+          }
+
+          #businessCalculatorContent,
+          #businessCalculatorContent {
+            min-height: 100%;
+            background: var(--color-background-secondary);
+            color: var(--color-text-primary);
+            font-family: var(--font-sans);
+          }
+
+          #businessCalculatorContent {
+            padding: 0 1rem 1rem;
+          }
+
+          #businessCalculatorContent .calc-shell {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 0.5rem 0 1.25rem;
+          }
+
+          #businessCalculatorContent .calc-top-title {
+            font-size: 16px;
+            font-weight: 700;
+          }
+
+          #businessCalculatorContent .tab-bar {
+            border-bottom: 1px solid var(--color-border-tertiary);
+            padding-right: 36px;
+          }
+
+          #businessCalculatorContent .tb {
+            padding: 9px 14px;
+            font-weight: 700;
+          }
+
+          #businessCalculatorContent .card {
+            border: 1px solid var(--color-border-tertiary);
+            padding: 1rem;
+          }
+
+          #businessCalculatorContent .f input,
+          #businessCalculatorContent .f select,
+          #businessCalculatorContent input,
+          #businessCalculatorContent select {
+            font-family: var(--font-sans);
+          }
+
+          #businessCalculatorContent .f input,
+          #businessCalculatorContent .f select,
+          #businessCalculatorContent input[type="number"],
+          #businessCalculatorContent input[type="text"] {
+            background: var(--color-background-primary);
+            border: 1px solid var(--color-border-tertiary);
+            border-radius: var(--border-radius-md);
+            color: var(--color-text-primary);
+            outline: none;
+            padding: .65rem .75rem;
+          }
+
+          #businessCalculatorContent .f input:focus,
+          #businessCalculatorContent .f select:focus,
+          #businessCalculatorContent input[type="number"]:focus,
+          #businessCalculatorContent input[type="text"]:focus,
+          #businessCalculatorContent select:focus {
+            border-color: var(--color-border-info);
+            box-shadow: 0 0 0 2px rgba(51, 51, 51, .12);
+          }
+
+
+          #businessCalculatorContent .stepper-input {
+            display: flex;
+            align-items: stretch;
+            border: 1px solid var(--color-border-tertiary);
+            border-radius: var(--border-radius-md);
+            overflow: hidden;
+            background: var(--color-background-primary);
+            width: 100%;
+            height: 38px;
+            transition: border-color .15s, box-shadow .15s;
+          }
+
+          #businessCalculatorContent .stepper-input:focus-within {
+            border-color: var(--color-border-info);
+            box-shadow: 0 0 0 2px rgba(51, 51, 51, .12);
+          }
+
+          #businessCalculatorContent[data-theme="dark"] .stepper-input:focus-within {
+            box-shadow: 0 0 0 2px rgba(255, 255, 255, .15);
+          }
+
+          #businessCalculatorContent .stepper-btn {
+            border: none;
+            background: var(--color-background-secondary);
+            color: var(--color-text-primary);
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 700;
+            width: 36px;
+            min-width: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            transition: background 0.15s, color 0.15s;
+            padding: 0;
+            line-height: 1;
+            flex-shrink: 0;
+          }
+
+          #businessCalculatorContent .stepper-btn:hover {
+            background: var(--color-background-info);
+            color: var(--color-text-info);
+          }
+
+          #businessCalculatorContent .stepper-btn:active {
+            background: var(--color-text-info);
+            color: #ffffff;
+          }
+
+          #businessCalculatorContent .stepper-val {
+            border: none !important;
+            border-radius: 0 !important;
+            text-align: center !important;
+            width: 100% !important;
+            min-width: 0 !important;
+            padding: 0 0.5rem !important;
+            box-shadow: none !important;
+            height: 100% !important;
+            font-weight: 500;
+            background: transparent !important;
+            color: var(--color-text-primary);
+            outline: none !important;
+            -webkit-appearance: none;
+            -moz-appearance: textfield;
+          }
+
+          #businessCalculatorContent input[type="number"]::-webkit-inner-spin-button,
+          #businessCalculatorContent input[type="number"]::-webkit-outer-spin-button,
+          #businessCalculatorContent .stepper-val::-webkit-inner-spin-button,
+          #businessCalculatorContent .stepper-val::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+          }
+
+          #businessCalculatorContent input[type="number"] {
+            -moz-appearance: textfield;
+          }
+
+          #businessCalculatorContent input::placeholder {
+            color: var(--color-text-tertiary);
+          }
+
+          #businessCalculatorContent .res-box,
+          #businessCalculatorContent .metric,
+          #businessCalculatorContent .hist-item,
+          #businessCalculatorContent .basic-display {
+            border: 1px solid var(--color-border-tertiary);
+          }
+
+          #businessCalculatorContent .pill {
+            border: 1px solid var(--color-border-secondary);
+            background: var(--color-background-primary);
+          }
+
+          #businessCalculatorContent .action-btn,
+          #businessCalculatorContent .bb {
+            border-width: 1px;
+          }
+
+          #businessCalculatorContent .bb:hover,
+          #businessCalculatorContent .pill:hover,
+          #businessCalculatorContent .action-btn:hover {
+            filter: brightness(.98);
+          }
+
+          #businessCalculatorContent[data-theme="dark"] .bb:hover,
+          #businessCalculatorContent[data-theme="dark"] .pill:hover,
+          #businessCalculatorContent[data-theme="dark"] .action-btn:hover {
+            filter: brightness(1.08);
+          }
+
+          #businessCalculatorContent .wage-mode-toggle {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 12px;
+          }
+
+          #businessCalculatorContent .wage-mode-btn {
+            flex: 1;
+            padding: 9px 12px;
+            border-radius: var(--border-radius-md);
+            border: 1px solid var(--color-border-tertiary);
+            background: var(--color-background-primary);
+            color: var(--color-text-secondary);
+            font-weight: 700;
+            cursor: pointer;
+          }
+
+          #businessCalculatorContent .wage-mode-btn.active {
+            background: var(--color-background-info);
+            color: var(--color-text-info);
+            border-color: var(--color-border-info);
+          }
+
+          #businessCalculatorContent .wage-item-row {
+            display: grid;
+            grid-template-columns: 80px 70px 1fr 1fr 28px;
+            gap: 5px;
+            align-items: center;
+            margin-bottom: 8px;
+          }
+
+          #businessCalculatorContent .wage-item-row.three {
+            grid-template-columns: minmax(58px, .65fr) minmax(58px, .65fr) minmax(78px, 1fr) minmax(70px, .9fr) 24px;
+            align-items: center;
+          }
+
+          #businessCalculatorContent .wage-item-row input,
+          #businessCalculatorContent .wage-item-row select {
+            font-size: 13px;
+          }
+
+          #businessCalculatorContent .wage-header {
+            display: grid;
+            grid-template-columns: 80px 70px 1fr 1fr 28px;
+            gap: 5px;
+            font-size: 11px;
+            color: var(--color-text-tertiary);
+            margin-bottom: 6px;
+          }
+
+          #businessCalculatorContent .wage-header.three {
+            grid-template-columns: minmax(58px, .65fr) minmax(58px, .65fr) minmax(78px, 1fr) minmax(70px, .9fr) 24px;
+          }
+
+          #businessCalculatorContent .wage-quintal-table { overflow-x: hidden; }
+          #businessCalculatorContent .wage-quintal-table .wage-header.three,
+          #businessCalculatorContent .wage-quintal-table .wage-item-row.three {
+            min-width: 0;
+            width: 100%;
+          }
+
+          #businessCalculatorContent .wage-item-row .stepper-input {
+            height: 32px;
+          }
+
+          #businessCalculatorContent .wage-item-row .stepper-btn {
+            width: 26px;
+            min-width: 26px;
+            font-size: 13px;
+          }
+
+          #businessCalculatorContent .wage-item-row .stepper-val {
+            font-size: 12px !important;
+            padding: 0 2px !important;
+          }
+
+          #businessCalculatorContent .wage-item-row.three .stepper-btn { width: 26px; min-width: 26px; padding: 0; }
+
+          #businessCalculatorContent .wage-item-row.three .stepper-clear {
+            width: 18px;
+            min-width: 18px;
+            border: 0;
+            padding: 0;
+            background: var(--color-background-secondary);
+            color: var(--color-text-tertiary);
+            cursor: pointer;
+            font-size: 13px;
+            line-height: 1;
+          }
+
+          #businessCalculatorContent .wage-item-row.three .stepper-clear:hover {
+            color: var(--color-text-danger);
+          }
+
+          #businessCalculatorContent .wage-item-row.three .stepper-input .stepper-clear {
+            display: none;
+          }
+
+          #businessCalculatorContent .wage-field-with-clear {
+            display: flex;
+            align-items: center;
+            gap: 1px;
+            min-width: 0;
+          }
+
+          #businessCalculatorContent .wage-field-with-clear .stepper-input {
+            flex: 1;
+            min-width: 0;
+          }
+
+          #businessCalculatorContent .wage-field-clear {
+            width: 18px;
+            min-width: 18px;
+            height: 26px;
+            border: 0;
+            padding: 0;
+            background: transparent;
+            color: var(--color-text-tertiary);
+            cursor: pointer;
+            font-size: 14px;
+            line-height: 1;
+          }
+
+          #businessCalculatorContent .wage-field-clear:hover {
+            color: var(--color-text-danger);
+          }
+
+          #businessCalculatorContent .wage-add-btn {
+            font-size: 13px;
+            color: var(--color-text-info);
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            margin-top: 4px;
+          }
+
+          #businessCalculatorContent .wage-total-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            padding: 12px 0 0;
+            margin-top: 6px;
+            border-top: 1px solid var(--color-border-secondary);
+          }
+
+          #businessCalculatorContent .wage-total-row .lbl {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--color-text-primary);
+          }
+
+          #businessCalculatorContent .wage-total-row .val {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--color-text-success);
+          }
+
+          #businessCalculatorContent .record-row {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 10px;
+          }
+
+          #businessCalculatorContent .record-row .action-btn {
+            width: auto;
+            min-width: 150px;
+            padding: 9px 16px;
+          }
+
+          #businessCalculatorContent .calc-shell.history-mode {
+            max-width: none;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+          }
+
+          #businessCalculatorContent .calc-shell.history-mode .tab-bar {
+            flex: 0 0 auto;
+          }
+
+          #businessCalculatorContent .calc-shell.history-mode #pg-hist.on {
+            flex: 1;
+            min-height: 0;
+            height: auto;
+          }
+
+          #businessCalculatorContent .calc-shell.history-mode #pg-hist.on .card {
+            height: 100%;
+            margin-bottom: 0;
+            display: flex;
+            flex-direction: column;
+          }
+
+          #businessCalculatorContent #hist-list {
+            flex: 1;
+            min-height: 0;
+          }
+
+          #businessCalculatorContent .calc-shell.history-mode #pg-hist.on .history-list {
+            max-height: none;
+            height: 100%;
+          }
+
+          #businessCalculatorContent .calc-shell.history-mode #pg-hist.on .hist-item {
+            align-items: flex-start;
+          }
+        </style>
+
+
+        <div class="calc-shell">
+
+
+
+
+
+
+
+
+          <div class="tab-bar">
+            <button class="tb on" onclick="go('basic',this)"><i class="ti ti-calculator" aria-hidden="true"
+                style="font-size:13px;vertical-align:-1px;margin-right:4px;"></i>Basic</button>
+            <button class="tb" onclick="go('wage',this)"><i class="ti ti-scale" aria-hidden="true"
+                style="font-size:13px;vertical-align:-1px;margin-right:4px;"></i>Wage</button>
+            <button class="tb" onclick="go('disc',this)"><i class="ti ti-percentage" aria-hidden="true"
+                style="font-size:13px;vertical-align:-1px;margin-right:4px;"></i>Discount</button>
+            <button class="tb" onclick="go('change',this)"><i class="ti ti-cash" aria-hidden="true"
+                style="font-size:13px;vertical-align:-1px;margin-right:4px;"></i>Change</button>
+            <button class="tb" onclick="go('vat',this)"><i class="ti ti-receipt-tax" aria-hidden="true"
+                style="font-size:13px;vertical-align:-1px;margin-right:4px;"></i>VAT</button>
+            <button class="tb" onclick="go('profit',this)"><i class="ti ti-trending-up" aria-hidden="true"
+                style="font-size:13px;vertical-align:-1px;margin-right:4px;"></i>Profit</button>
+            <button class="tb" onclick="go('split',this)"><i class="ti ti-users" aria-hidden="true"
+                style="font-size:13px;vertical-align:-1px;margin-right:4px;"></i>Split bill</button>
+            <button class="tb" onclick="go('unit',this)"><i class="ti ti-ruler" aria-hidden="true"
+                style="font-size:13px;vertical-align:-1px;margin-right:4px;"></i>Unit price</button>
+            <button class="tb" onclick="go('hist',this)"><i class="ti ti-history" aria-hidden="true"
+                style="font-size:13px;vertical-align:-1px;margin-right:4px;"></i>History</button>
+          </div>
+
+          <!-- ═══ BASIC ═══ -->
+          <div class="pg on" id="pg-basic">
+            <div class="card">
+              <div class="basic-display">
+                <div id="b-expr" class="basic-expr" contenteditable="true" spellcheck="false" autocomplete="off"
+                  aria-label="Expression"></div>
+                <div id="b-num" class="basic-num"></div>
+              </div>
+              <div class="btn-grid">
+                <button class="bb ac" data-k="AC">AC</button>
+                <button class="bb fn" data-k="+/-">+/-</button>
+                <button class="bb fn" data-k="%">%</button>
+                <button class="bb op" data-k="÷">÷</button>
+                <button class="bb" data-k="7">7</button>
+                <button class="bb" data-k="8">8</button>
+                <button class="bb" data-k="9">9</button>
+                <button class="bb op" data-k="×">×</button>
+                <button class="bb" data-k="4">4</button>
+                <button class="bb" data-k="5">5</button>
+                <button class="bb" data-k="6">6</button>
+                <button class="bb op" data-k="-">−</button>
+                <button class="bb" data-k="1">1</button>
+                <button class="bb" data-k="2">2</button>
+                <button class="bb" data-k="3">3</button>
+                <button class="bb op" data-k="+">+</button>
+                <button class="bb fn" data-k="⌫">⌫</button>
+                <button class="bb" data-k="0">0</button>
+                <button class="bb" data-k=".">.</button>
+                <button class="bb eq" data-k="=">=</button>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-title">Quick tools</div>
+              <div class="g3">
+                <div class="f"><label>Square</label>
+                  <div class="stepper-input"><button type="button" class="stepper-btn" onclick="calcStep('qt-sq', -1)"
+                      aria-label="Decrease">−</button><input type="number" id="qt-sq" class="stepper-val"
+                      placeholder="number" oninput="qtSq()"><button type="button" class="stepper-btn"
+                      onclick="calcStep('qt-sq', 1)" aria-label="Increase">+</button></div>
+                </div>
+                <div class="f"><label>Square root</label>
+                  <div class="stepper-input"><button type="button" class="stepper-btn" onclick="calcStep('qt-sqrt', -1)"
+                      aria-label="Decrease">−</button><input type="number" id="qt-sqrt" class="stepper-val"
+                      placeholder="number" min="0" oninput="qtSqrt()"><button type="button" class="stepper-btn"
+                      onclick="calcStep('qt-sqrt', 1)" aria-label="Increase">+</button></div>
+                </div>
+                <div class="f"><label>Power (xⁿ)</label>
+                  <div style="display:flex;gap:6px;">
+                    <div class="stepper-input" style="flex:1;"><button type="button" class="stepper-btn"
+                        onclick="calcStep('qt-base', -1)" aria-label="Decrease">−</button><input type="number"
+                        id="qt-base" class="stepper-val" placeholder="x" oninput="qtPow()"><button type="button"
+                        class="stepper-btn" onclick="calcStep('qt-base', 1)" aria-label="Increase">+</button></div>
+                    <div class="stepper-input" style="flex:1;"><button type="button" class="stepper-btn"
+                        onclick="calcStep('qt-exp', -1)" aria-label="Decrease">−</button><input type="number"
+                        id="qt-exp" class="stepper-val" placeholder="n" oninput="qtPow()"><button type="button"
+                        class="stepper-btn" onclick="calcStep('qt-exp', 1)" aria-label="Increase">+</button></div>
+                  </div>
+                </div>
+              </div>
+              <div id="qt-result" style="font-size:14px;color:var(--color-text-info);margin-top:6px;min-height:20px;">
+              </div>
+              <div class="record-row"><button class="action-btn" onclick="recordQuickTool()">Record quick
+                  result</button></div>
+            </div>
+          </div>
+
+          <!-- ═══ DISCOUNT ═══ -->
+
+          <!-- Wage Calculator -->
+          <div class="pg" id="pg-wage">
+            <div class="wage-mode-toggle">
+              <button type="button" class="wage-mode-btn active" id="wageBtnQuintal"
+                onclick="wageSetMode('quintal')">Quintal-wise</button>
+              <button type="button" class="wage-mode-btn" id="wageBtnBag"
+                onclick="wageSetMode('bag')">Per-bag</button>
+            </div>
+
+            <div class="card" id="wageBagSection">
+              <div class="card-title">Bag items</div>
+              <div class="wage-header">
+                <div>Item</div>
+                <div>Wt (kg)</div>
+                <div>Bags</div>
+                <div>Rate</div>
+                <div></div>
+              </div>
+              <div id="wageBagItemsList"></div>
+              <button class="wage-add-btn" onclick="wageAddBagItem()">+ Add item</button>
+            </div>
+
+            <div class="card" id="wageQuintalSection" style="display:none;">
+              <div class="card-title">Quintal items</div>
+              <div class="wage-quintal-table">
+                <div class="wage-header three">
+                  <div>Bags</div>
+                  <div>Kg/bag</div>
+                  <div>Total kg</div>
+                  <div>Rate/Qtl</div>
+                  <div></div>
+                </div>
+                <div id="wageQuintalItemsList"></div>
+              </div>
+              <button class="wage-add-btn" onclick="wageAddQuintalItem()">+ Add item</button>
+            </div>
+
+            <div class="metrics">
+              <div class="metric">
+                <div class="ml">Total quintals</div>
+                <div class="mv" id="wageMetricQuintal">0.00</div>
+              </div>
+              <div class="metric">
+                <div class="ml">Total bags</div>
+                <div class="mv" id="wageMetricBags">0</div>
+              </div>
+              <div class="metric">
+                <div class="ml">Base wage</div>
+                <div class="mv" id="wageMetricBase">Rs. 0.00</div>
+              </div>
+              <div class="metric">
+                <div class="ml">Total payable</div>
+                <div class="mv green" id="wageMetricTotal">Rs. 0.00</div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-title">Wage breakdown</div>
+              <div id="wageBreakdownRows"></div>
+              <div class="wage-total-row"><span class="lbl">Total payable</span><span class="val"
+                  id="wageResultTotal">Rs. 0.00</span></div>
+              <div class="record-row"><button class="action-btn" onclick="recordWage()">Record wage</button></div>
+            </div>
+          </div>
+
+          <div class="pg" id="pg-disc">
+            <div class="card">
+              <div class="card-title">Discount calculator</div>
+              <div class="f">
+                <label>Original price (Rs.)</label>
+                <div class="stepper-input"><button type="button" class="stepper-btn" onclick="calcStep('d-price', -1)"
+                    aria-label="Decrease">−</button><input type="number" id="d-price" class="stepper-val"
+                    placeholder="0.00" min="0" oninput="calcDisc()"><button type="button" class="stepper-btn"
+                    onclick="calcStep('d-price', 1)" aria-label="Increase">+</button></div>
+              </div>
+              <div class="f">
+                <label>Discount type</label>
+                <div class="pills" id="disc-type-pills">
+                  <button class="pill on" data-dt="pct" onclick="setDiscType('pct',this)">By %</button>
+                  <button class="pill" data-dt="amt" onclick="setDiscType('amt',this)">By Rs. amount</button>
+                  <button class="pill" data-dt="sp" onclick="setDiscType('sp',this)">By selling price</button>
+                </div>
+              </div>
+              <div class="f" id="d-pct-field">
+                <label>Discount %</label>
+                <div class="stepper-input"><button type="button" class="stepper-btn" onclick="calcStep('d-pct', -1)"
+                    aria-label="Decrease">−</button><input type="number" id="d-pct" class="stepper-val" placeholder="0"
+                    min="0" max="100" oninput="calcDisc()"><button type="button" class="stepper-btn"
+                    onclick="calcStep('d-pct', 1)" aria-label="Increase">+</button></div>
+                <div class="pills" style="margin-top:6px;">
+                  <button class="pill" onclick="setPct(5)">5%</button>
+                  <button class="pill" onclick="setPct(10)">10%</button>
+                  <button class="pill" onclick="setPct(15)">15%</button>
+                  <button class="pill" onclick="setPct(20)">20%</button>
+                  <button class="pill" onclick="setPct(25)">25%</button>
+                  <button class="pill" onclick="setPct(30)">30%</button>
+                  <button class="pill" onclick="setPct(50)">50%</button>
+                </div>
+              </div>
+              <div class="f" id="d-amt-field" style="display:none;">
+                <label>Discount amount (Rs.)</label>
+                <div class="stepper-input"><button type="button" class="stepper-btn" onclick="calcStep('d-amt', -1)"
+                    aria-label="Decrease">−</button><input type="number" id="d-amt" class="stepper-val"
+                    placeholder="0.00" min="0" oninput="calcDisc()"><button type="button" class="stepper-btn"
+                    onclick="calcStep('d-amt', 1)" aria-label="Increase">+</button></div>
+              </div>
+              <div class="f" id="d-sp-field" style="display:none;">
+                <label>Selling price (Rs.)</label>
+                <div class="stepper-input"><button type="button" class="stepper-btn" onclick="calcStep('d-sp', -1)"
+                    aria-label="Decrease">−</button><input type="number" id="d-sp" class="stepper-val"
+                    placeholder="0.00" min="0" oninput="calcDisc()"><button type="button" class="stepper-btn"
+                    onclick="calcStep('d-sp', 1)" aria-label="Increase">+</button></div>
+              </div>
+              <label
+                style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--color-text-secondary);cursor:pointer;margin-top:8px;">
+                <input type="checkbox" id="d-vat" onchange="calcDisc()"> Add VAT 13%
+              </label>
+            </div>
+            <div class="metrics" id="disc-metrics">
+              <div class="metric">
+                <div class="ml">Original</div>
+                <div class="mv" id="dm-orig">Rs. 0</div>
+              </div>
+              <div class="metric">
+                <div class="ml">Discount</div>
+                <div class="mv red" id="dm-disc">− Rs. 0</div>
+              </div>
+              <div class="metric">
+                <div class="ml">After discount</div>
+                <div class="mv" id="dm-after">Rs. 0</div>
+              </div>
+              <div class="metric">
+                <div class="ml">VAT 13%</div>
+                <div class="mv warn" id="dm-vat">+ Rs. 0</div>
+              </div>
+              <div class="metric">
+                <div class="ml">Final payable</div>
+                <div class="mv green" id="dm-pay">Rs. 0</div>
+              </div>
+              <div class="metric">
+                <div class="ml">You save</div>
+                <div class="mv info" id="dm-save">Rs. 0 (0%)</div>
+              </div>
+            </div>
+            <div class="record-row"><button class="action-btn" onclick="recordDisc()">Record discount</button></div>
+          </div>
+
+          <!-- ═══ CHANGE ═══ -->
+          <div class="pg" id="pg-change">
+            <div class="card">
+              <div class="card-title">Change calculator</div>
+              <div class="g2">
+                <div class="f">
+                  <label>Bill amount (Rs.)</label>
+                  <div class="stepper-input"><button type="button" class="stepper-btn" onclick="calcStep('ch-bill', -1)"
+                      aria-label="Decrease">−</button><input type="number" id="ch-bill" class="stepper-val"
+                      placeholder="0.00" min="0" oninput="calcChange()"><button type="button" class="stepper-btn"
+                      onclick="calcStep('ch-bill', 1)" aria-label="Increase">+</button></div>
+                </div>
+                <div class="f">
+                  <label>Cash received (Rs.)</label>
+                  <div class="stepper-input"><button type="button" class="stepper-btn" onclick="calcStep('ch-cash', -1)"
+                      aria-label="Decrease">−</button><input type="number" id="ch-cash" class="stepper-val"
+                      placeholder="0.00" min="0" oninput="calcChange()"><button type="button" class="stepper-btn"
+                      onclick="calcStep('ch-cash', 1)" aria-label="Increase">+</button></div>
+                </div>
+              </div>
+              <div class="f">
+                <label>Quick cash (Rs.)</label>
+                <div class="pills">
+                  <button class="pill" onclick="setCash(50)">50</button>
+                  <button class="pill" onclick="setCash(100)">100</button>
+                  <button class="pill" onclick="setCash(200)">200</button>
+                  <button class="pill" onclick="setCash(500)">500</button>
+                  <button class="pill" onclick="setCash(1000)">1,000</button>
+                  <button class="pill" onclick="setCash(2000)">2,000</button>
+                  <button class="pill" onclick="setCash(5000)">5,000</button>
+                  <button class="pill" onclick="setCash(10000)">10,000</button>
+                </div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="big-res">
+                <div class="big-label">Change to return</div>
+                <div class="big-val" id="ch-result" style="color:var(--color-text-success);">Rs. 0.00</div>
+                <div id="ch-note" style="font-size:12px;color:var(--color-text-secondary);margin-top:4px;"></div>
+              </div>
+              <div class="sep"></div>
+              <div class="card-title">Denomination breakdown</div>
+              <div id="ch-denoms" style="font-size:13px;color:var(--color-text-secondary);">Enter bill and cash
+                above to
+                see breakdown.</div>
+              <div class="record-row"><button class="action-btn" onclick="recordChange()">Record change</button></div>
+            </div>
+          </div>
+
+          <!-- ═══ VAT ═══ -->
+          <div class="pg" id="pg-vat">
+            <div class="card">
+              <div class="card-title">VAT calculator — Nepal 13%</div>
+              <div class="f">
+                <label>VAT mode</label>
+                <div class="pills" id="vat-mode-pills">
+                  <button class="pill on" data-vm="add" onclick="setVatMode('add',this)">Add VAT to price</button>
+                  <button class="pill" data-vm="extract" onclick="setVatMode('extract',this)">Extract VAT from
+                    price</button>
+                </div>
+              </div>
+              <div class="f">
+                <label id="vat-inp-label">Price before VAT (Rs.)</label>
+                <div class="stepper-input"><button type="button" class="stepper-btn" onclick="calcStep('vat-price', -1)"
+                    aria-label="Decrease">−</button><input type="number" id="vat-price" class="stepper-val"
+                    placeholder="0.00" min="0" oninput="calcVat()"><button type="button" class="stepper-btn"
+                    onclick="calcStep('vat-price', 1)" aria-label="Increase">+</button></div>
+              </div>
+              <div class="f">
+                <label>VAT rate %</label>
+                <div class="stepper-input"><button type="button" class="stepper-btn" onclick="calcStep('vat-rate', -1)"
+                    aria-label="Decrease">−</button><input type="number" id="vat-rate" class="stepper-val" value="13"
+                    min="0" max="100" oninput="calcVat()"><button type="button" class="stepper-btn"
+                    onclick="calcStep('vat-rate', 1)" aria-label="Increase">+</button></div>
+                <div class="hint">Nepal standard: 13%</div>
+              </div>
+            </div>
+            <div class="metrics">
+              <div class="metric">
+                <div class="ml">Base amount</div>
+                <div class="mv" id="vat-base">Rs. 0.00</div>
+              </div>
+              <div class="metric">
+                <div class="ml">VAT amount</div>
+                <div class="mv warn" id="vat-amt">Rs. 0.00</div>
+              </div>
+              <div class="metric">
+                <div class="ml">Total (incl. VAT)</div>
+                <div class="mv green" id="vat-total">Rs. 0.00</div>
+              </div>
+            </div>
+            <div class="record-row"><button class="action-btn" onclick="recordVat()">Record VAT</button></div>
+            <div class="card">
+              <div class="card-title">Multi-item VAT</div>
+              <div id="vat-items-list"></div>
+              <button class="add-person" onclick="addVatItem()"><i class="ti ti-plus" aria-hidden="true"
+                  style="font-size:13px;vertical-align:-2px;"></i> Add item</button>
+              <div class="sep"></div>
+              <div class="res-box">
+                <div class="res-row"><span class="lb">Sub-total</span><span class="vl" id="vi-sub">Rs. 0.00</span>
+                </div>
+                <div class="res-row"><span class="lb">Total VAT</span><span class="vl warn" id="vi-vat">Rs.
+                    0.00</span>
+                </div>
+                <div class="res-row"><span class="lb">Grand total</span><span class="vl green" id="vi-total">Rs.
+                    0.00</span></div>
+              </div>
+              <div class="record-row"><button class="action-btn" onclick="recordVatItems()">Record item VAT</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ═══ PROFIT ═══ -->
+          <div class="pg" id="pg-profit">
+            <div class="card">
+              <div class="card-title">Profit / margin calculator</div>
+              <div class="g2">
+                <div class="f"><label>Cost price (Rs.)</label>
+                  <div class="stepper-input"><button type="button" class="stepper-btn" onclick="calcStep('pr-cost', -1)"
+                      aria-label="Decrease">−</button><input type="number" id="pr-cost" class="stepper-val"
+                      placeholder="0.00" min="0" oninput="calcProfit()"><button type="button" class="stepper-btn"
+                      onclick="calcStep('pr-cost', 1)" aria-label="Increase">+</button></div>
+                </div>
+                <div class="f"><label>Selling price (Rs.)</label>
+                  <div class="stepper-input"><button type="button" class="stepper-btn" onclick="calcStep('pr-sell', -1)"
+                      aria-label="Decrease">−</button><input type="number" id="pr-sell" class="stepper-val"
+                      placeholder="0.00" min="0" oninput="calcProfit()"><button type="button" class="stepper-btn"
+                      onclick="calcStep('pr-sell', 1)" aria-label="Increase">+</button></div>
+                </div>
+              </div>
+              <div class="sep"></div>
+              <div class="f"><label>Or — set target margin %</label>
+                <div class="stepper-input"><button type="button" class="stepper-btn"
+                    onclick="calcStep('pr-margin-target', -1)" aria-label="Decrease">−</button><input type="number"
+                    id="pr-margin-target" class="stepper-val" placeholder="e.g. 30" oninput="calcMarginTarget()"><button
+                    type="button" class="stepper-btn" onclick="calcStep('pr-margin-target', 1)"
+                    aria-label="Increase">+</button></div>
+                <div class="hint" id="pr-margin-hint"></div>
+              </div>
+            </div>
+            <div class="metrics">
+              <div class="metric">
+                <div class="ml">Profit (Rs.)</div>
+                <div class="mv" id="pr-profit">Rs. 0</div>
+              </div>
+              <div class="metric">
+                <div class="ml">Profit margin %</div>
+                <div class="mv" id="pr-margin">0%</div>
+              </div>
+              <div class="metric">
+                <div class="ml">Markup %</div>
+                <div class="mv" id="pr-markup">0%</div>
+              </div>
+              <div class="metric">
+                <div class="ml">Break-even qty</div>
+                <div class="mv" id="pr-bep">—</div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-title">Margin gauge</div>
+              <div id="pr-gauge-label" style="font-size:12px;color:var(--color-text-secondary);margin-bottom:6px;">
+              </div>
+              <div class="progress-bar-wrap">
+                <div class="progress-bar" id="pr-bar" style="width:0%;background:var(--color-text-success);"></div>
+              </div>
+              <div
+                style="display:flex;justify-content:space-between;font-size:11px;color:var(--color-text-tertiary);margin-top:3px;">
+                <span>0%</span><span>Loss</span><span>Break even</span><span>Good</span><span>100%</span>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-title">Fixed overhead split</div>
+              <div class="g2">
+                <div class="f"><label>Fixed overhead (Rs.)</label>
+                  <div class="stepper-input"><button type="button" class="stepper-btn"
+                      onclick="calcStep('pr-fixed', -1)" aria-label="Decrease">−</button><input type="number"
+                      id="pr-fixed" class="stepper-val" placeholder="0" min="0" oninput="calcProfit()"><button
+                      type="button" class="stepper-btn" onclick="calcStep('pr-fixed', 1)"
+                      aria-label="Increase">+</button></div>
+                </div>
+                <div class="f"><label>Units sold</label>
+                  <div class="stepper-input"><button type="button" class="stepper-btn"
+                      onclick="calcStep('pr-units', -1)" aria-label="Decrease">−</button><input type="number"
+                      id="pr-units" class="stepper-val" placeholder="1" min="1" oninput="calcProfit()"><button
+                      type="button" class="stepper-btn" onclick="calcStep('pr-units', 1)"
+                      aria-label="Increase">+</button></div>
+                </div>
+              </div>
+              <div id="pr-overhead-res" style="font-size:13px;color:var(--color-text-secondary);margin-top:4px;">
+              </div>
+              <div class="record-row"><button class="action-btn" onclick="recordProfit()">Record profit</button></div>
+            </div>
+          </div>
+
+          <!-- ═══ SPLIT BILL ═══ -->
+          <div class="pg" id="pg-split">
+            <div class="card">
+              <div class="card-title">Split bill calculator</div>
+              <div class="g2">
+                <div class="f"><label>Total bill (Rs.)</label>
+                  <div class="stepper-input"><button type="button" class="stepper-btn"
+                      onclick="calcStep('sp-total', -1)" aria-label="Decrease">−</button><input type="number"
+                      id="sp-total" class="stepper-val" placeholder="0.00" min="0" oninput="calcSplit()"><button
+                      type="button" class="stepper-btn" onclick="calcStep('sp-total', 1)"
+                      aria-label="Increase">+</button></div>
+                </div>
+                <div class="f"><label>Service charge %</label>
+                  <div class="stepper-input"><button type="button" class="stepper-btn" onclick="calcStep('sp-svc', -1)"
+                      aria-label="Decrease">−</button><input type="number" id="sp-svc" class="stepper-val"
+                      placeholder="e.g. 10" min="0" oninput="calcSplit()"><button type="button" class="stepper-btn"
+                      onclick="calcStep('sp-svc', 1)" aria-label="Increase">+</button></div>
+                </div>
+              </div>
+              <label
+                style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--color-text-secondary);cursor:pointer;margin-bottom:10px;">
+                <input type="checkbox" id="sp-vat" onchange="calcSplit()"> Include VAT 13%
+              </label>
+              <div class="sep"></div>
+              <div class="card-title" style="margin-bottom:8px;">People</div>
+              <div
+                style="display:grid;grid-template-columns:1fr 80px 80px 24px;gap:6px;font-size:11px;color:var(--color-text-tertiary);margin-bottom:6px;">
+                <div>Name</div>
+                <div>Share %</div>
+                <div>Amount</div>
+                <div></div>
+              </div>
+              <div id="split-people"></div>
+              <button class="add-person" onclick="addSplitPerson()"><i class="ti ti-plus" aria-hidden="true"
+                  style="font-size:13px;vertical-align:-2px;"></i> Add person</button>
+            </div>
+            <div class="res-box">
+              <div class="res-row"><span class="lb">Bill sub-total</span><span class="vl" id="sp-sub">Rs.
+                  0.00</span>
+              </div>
+              <div class="res-row"><span class="lb">Service charge</span><span class="vl warn" id="sp-svc-amt">Rs.
+                  0.00</span></div>
+              <div class="res-row"><span class="lb">VAT 13%</span><span class="vl warn" id="sp-vat-amt">Rs.
+                  0.00</span>
+              </div>
+              <div class="res-row"><span class="lb">Grand total</span><span class="vl green" id="sp-grand">Rs.
+                  0.00</span></div>
+            </div>
+            <div class="record-row"><button class="action-btn" onclick="recordSplit()">Record split bill</button></div>
+          </div>
+
+          <!-- ═══ UNIT PRICE ═══ -->
+          <div class="pg" id="pg-unit">
+            <div class="card">
+              <div class="card-title">Unit price / bulk comparison</div>
+              <div id="unit-items"></div>
+              <button class="add-person" onclick="addUnitItem()"><i class="ti ti-plus" aria-hidden="true"
+                  style="font-size:13px;vertical-align:-2px;"></i> Add option</button>
+            </div>
+            <div id="unit-result" class="res-box" style="margin-top:0;"></div>
+            <div class="record-row"><button class="action-btn" onclick="recordUnit()">Record unit price</button></div>
+          </div>
+
+          <!-- ═══ HISTORY ═══ -->
+          <div class="pg" id="pg-hist">
+            <div class="card">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+                <div class="card-title" style="margin-bottom:0;">Calculation history</div>
+                <button class="pill" onclick="clearHist()">Clear all</button>
+              </div>
+              <div id="hist-list"></div>
+            </div>
+          </div>
+
+        </div>
+
+        <script src="js/business-calculator.js"></script>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function syncBusinessCalculatorTheme() {
+      const content = document.getElementById('businessCalculatorContent');
+      if (content) content.setAttribute('data-theme', localStorage.getItem('pos_theme') || 'light');
+    }
+
+    function openBusinessCalculator() {
+      const modal = document.getElementById('businessCalculatorModal');
+      if (!modal) return;
+      syncBusinessCalculatorTheme();
+      modal.style.display = 'flex';
+      modal.classList.add('active');
+    }
+
+    function closeBusinessCalculator() {
+      const modal = document.getElementById('businessCalculatorModal');
+      if (!modal) return;
+      modal.classList.remove('active');
+      modal.style.display = 'none';
+    }
+
+    window.addEventListener('storage', event => {
+      if (event.key === 'pos_theme') syncBusinessCalculatorTheme();
+    });
+  </script>
+
+  <script src="js/nepali-date-converter.umd.js"></script>
+  <script src="js/nepalidate.js"></script>
+  <script src="js/theme.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/business.js"></script>
+  <script src="js/cashier.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/notifications.js"></script>
+  <script src="js/sw-register.js"></script>
+  <script src="js/sidebar-brand.js"></script>
+  <script src="js/sidebar.js"></script>
+
+
+
+
+</body>
+
+</html>

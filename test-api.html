@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>POS System Test</title>
+</head>
+
+<body>
+    <h1>Testing POS System Functions</h1>
+    <div id="output"></div>
+
+    <script src="js/api.js"></script>
+    <script src="js/business.js"></script>
+    <script>
+        const output = document.getElementById('output');
+
+        // Test if API is loaded
+        if (window.posAPI) {
+            output.innerHTML += '<p style="color: green;">✓ API loaded successfully</p>';
+
+            // Test deleteSale function exists
+            if (typeof window.posAPI.deleteSale === 'function') {
+                output.innerHTML += '<p style="color: green;">✓ deleteSale function exists</p>';
+            } else {
+                output.innerHTML += '<p style="color: red;">✗ deleteSale function NOT found</p>';
+            }
+
+            // Test getting sales
+            window.posAPI.getAllSales()
+                .then(sales => {
+                    output.innerHTML += `<p style="color: green;">✓ Found ${sales.length} sales in database</p>`;
+                    if (sales.length > 0) {
+                        output.innerHTML += `<p>First sale Bill#: ${sales[0].billNo}</p>`;
+                        output.innerHTML += '<button onclick="testDelete()">Test Delete First Sale</button>';
+                        window.firstBillNo = sales[0].billNo;
+                    }
+                })
+                .catch(err => {
+                    output.innerHTML += `<p style="color: red;">✗ Error loading sales: ${err.message}</p>`;
+                });
+        } else {
+            output.innerHTML += '<p style="color: red;">✗ API NOT loaded</p>';
+        }
+
+        function testDelete() {
+            if (confirm('This will delete the first sale. Continue?')) {
+                window.posAPI.deleteSale(window.firstBillNo)
+                    .then(result => {
+                        output.innerHTML += `<p style="color: green;">✓ Delete successful: ${result.message}</p>`;
+                    })
+                    .catch(err => {
+                        output.innerHTML += `<p style="color: red;">✗ Delete failed: ${err.message}</p>`;
+                    });
+            }
+        }
+    </script>
+</body>
+
+</html>
+

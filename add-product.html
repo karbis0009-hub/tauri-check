@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Product - K Pos</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+    <style>
+        @media (max-width: 992px) {
+            .top-bar-stats {
+                display: none !important;
+            }
+        }
+
+        .category-tab {
+            position: relative;
+        }
+
+        .category-tab.dragging {
+            opacity: 0.5;
+            cursor: grabbing;
+        }
+
+        .delete-cat-btn {
+            display: none;
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #ef4444;
+            color: white;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            font-size: 10px;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border: 2px solid var(--bg-card);
+            z-index: 10;
+        }
+
+        .category-tab:hover .delete-cat-btn {
+            display: flex;
+        }
+
+        .category-tab.active .category-count {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        /* Modern Table Adjustments */
+        #inventory-table th {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 1rem 0.75rem;
+            background: var(--bg-main);
+            color: var(--text-secondary);
+        }
+
+        #inventory-table td {
+            padding: 0.85rem 0.75rem;
+            font-size: 0.9rem;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .badge {
+            padding: 0.25rem 0.6rem;
+            border-radius: 2rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-secondary {
+            background: var(--bg-main);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-light);
+        }
+
+        .text-danger {
+            color: #ef4444;
+            font-weight: 600;
+        }
+
+        /* Mobile specific fixes */
+        @media (max-width: 768px) {
+            .app-layout {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                position: fixed;
+                left: -var(--sidebar-width);
+                z-index: 1000;
+                transition: left 0.3s;
+                height: 100vh;
+            }
+
+            .sidebar.active {
+                left: 0;
+            }
+
+            .main-content {
+                margin-left: 0 !important;
+                width: 100%;
+            }
+
+            .top-bar {
+                padding: 0.5rem 1rem;
+            }
+
+            .menu-toggle.mobile-only {
+                display: flex !important;
+            }
+
+            .category-tabs {
+                overflow-x: auto;
+                white-space: nowrap;
+                padding-bottom: 0.5rem;
+            }
+
+            .category-tab {
+                flex-shrink: 0;
+            }
+
+            /* Stack table on mobile */
+            .table-wrapper table,
+            .table-wrapper thead,
+            .table-wrapper tbody,
+            .table-wrapper th,
+            .table-wrapper td,
+            .table-wrapper tr {
+                display: block;
+            }
+
+            .table-wrapper thead tr {
+                position: absolute;
+                top: -9999px;
+                left: -9999px;
+            }
+
+            .table-wrapper tr {
+                border: 1px solid var(--border-light);
+                margin-bottom: 1rem;
+                border-radius: 0.75rem;
+                background: var(--bg-card);
+                padding: 0.5rem;
+            }
+
+            .table-wrapper td {
+                border: none;
+                position: relative;
+                padding-left: 50% !important;
+                text-align: left !important;
+                min-height: 2.5rem;
+                display: flex;
+                align-items: center;
+                flex-wrap: wrap;
+                gap: 0.25rem;
+            }
+
+            .table-wrapper td:before {
+                position: absolute;
+                left: 1rem;
+                width: 45%;
+                padding-right: 10px;
+                white-space: nowrap;
+                content: attr(data-label);
+                font-weight: 700;
+                color: var(--text-secondary);
+                font-size: 0.8rem;
+            }
+        }
+
+        /* Stepper Input: [ - ] [ value ] [ + ] */
+        .stepper-input {
+            display: flex;
+            align-items: stretch;
+            border: 1px solid var(--border-light, #e5e7eb);
+            border-radius: 0.5rem;
+            overflow: hidden;
+            background: var(--bg-card, #ffffff);
+            height: 38px;
+        }
+        .stepper-btn {
+            border: none;
+            background: var(--bg-main, #f3f4f6);
+            color: var(--text-primary, #111827);
+            cursor: pointer;
+            font-size: 1.15rem;
+            font-weight: 700;
+            width: 38px;
+            min-width: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            transition: background 0.15s, color 0.15s;
+            padding: 0;
+            line-height: 1;
+        }
+        .stepper-btn:hover {
+            background: var(--border-light, #e5e7eb);
+        }
+        .stepper-btn:active {
+            background: var(--accent-primary, #4f46e5);
+            color: #ffffff;
+        }
+        .stepper-val {
+            border: none !important;
+            border-radius: 0 !important;
+            text-align: center !important;
+            width: 100% !important;
+            padding: 0 0.5rem !important;
+            box-shadow: none !important;
+            height: 100% !important;
+            font-weight: 600;
+            -webkit-appearance: none;
+            -moz-appearance: textfield;
+        }
+        .stepper-val::-webkit-inner-spin-button,
+        .stepper-val::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        /* Status Toggle Switch */
+        .status-switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+            margin: 0;
+            flex-shrink: 0;
+        }
+        .status-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .status-toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ef4444;
+            transition: 0.25s;
+            border-radius: 24px;
+        }
+        .status-toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.25s;
+            border-radius: 50%;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+        .status-switch input:checked + .status-toggle-slider {
+            background-color: #10b981;
+        }
+        .status-switch input:checked + .status-toggle-slider:before {
+            transform: translateX(20px);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <!-- Mobile Sidebar Header -->
+            <div class="sidebar-header mobile-only">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <div class="brand-text">K Pos</div>
+                </div>
+                <button class="close-sidebar-btn" onclick="toggleSidebar()">&times;</button>
+            </div>
+
+            <div class="brand" id="sidebarBrand">K Pos</div>
+            <nav class="nav-menu">
+                <a href="index.html" class="nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                    </svg>
+                    <span>Dashboard</span>
+                </a>
+                <a href="billing.html" class="nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                    <span>Billing / POS</span>
+                </a>
+                <a href="sales.html" class="nav-link">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m.599-.747C13.101 16.559 12.552 16 12 16c-1.11 0-2.08-.402-2.599-1M12 16V7">
+                        </path>
+                    </svg>
+                    <span>Sales</span>
+                </a>
+                <a href="reports.html" class="nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span>Reports</span>
+                </a>
+                <a href="purchase.html" class="nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                    </svg>
+                    <span>Purchase Invoice</span>
+                </a>
+                <a href="sales-invoice.html" class="nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
+                    </svg>
+                    <span>Sales Tax Invoice</span>
+                </a>
+
+                <a href="ar.html" class="nav-link">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z">
+                        </path>
+                    </svg>
+                    <span>Accounts Receivable</span>
+                </a>
+                <div class="nav-item-group">
+                    <a href="inventory.html" class="nav-link active">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                        </svg>
+                        <span>Inventory</span>
+                    </a>
+                    <div class="sub-menu">
+                        <a href="inventory.html" class="nav-sub-link">List Product</a>
+                        <a href="add-product.html" class="nav-sub-link">Add Product</a>
+                        <a href="category.html" class="nav-sub-link">Category</a>
+                        <a href="barcode.html" class="nav-sub-link">Barcodes</a>
+                    </div>
+                </div>
+                <a href="payroll.html" class="nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                        <circle cx="8.5" cy="7" r="4" />
+                        <polyline points="17 11 19 13 23 9" />
+                    </svg>
+                    <span>Payroll</span>
+                </a>
+                <a href="settings.html" class="nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <span>Settings</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer mobile-only">
+                <div class="shift-section">
+                    <span class="shift-label">Shift</span>
+                    <div class="shift-user">
+                        <div class="user-avatar-sm" id="sidebarAvatar">AD</div>
+                        <span class="user-name-sm" id="sidebarCashierName">Admin User</span>
+                    </div>
+                </div>
+                <div class="sidebar-copyright">
+                    <p>© 2026 K Pos App</p>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-bar" style="overflow: visible; flex-shrink: 0;">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <button class="menu-toggle mobile-only" onclick="toggleSidebar()"
+                        style="background: none; border: none; color: var(--text-primary); cursor: pointer; padding: 0.5rem; display: flex; align-items: center; justify-content: center;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </button>
+                    <span class="logo-text" style="display: none;"></span>
+                </div>
+            </header>
+            <div style="padding: 1rem 1.5rem;">
+                <div class="card" style="max-width: 1100px; margin: 0 auto; padding: 1.5rem 2rem;">
+                    <div class="modal-header" style="display:none;">
+                        <h3 class="page-title" id="modalTitle">Add Product</h3>
+                        <button class="btn btn-secondary" onclick="closeModal()" style="padding: 0.4rem;">✕</button>
+                    </div>
+                    <div class="modal-body" style="padding-right: 0.25rem;">
+                        <form id="itemForm" onsubmit="return false;">
+                            <input type="hidden" id="itemId">
+
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 2rem; align-items: start;">
+                                <!-- SECTION 1: Product Information -->
+                                <div>
+                                    <div style="font-size:0.75rem; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--accent-primary); margin-bottom:1rem; padding-bottom:0.4rem; border-bottom:1px solid var(--border-light);">
+                                        📋 Basic Information
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label class="form-label">Product Name <span style="color:#ef4444">*</span></label>
+                                        <input type="text" id="itemName" class="form-input" required
+                                            placeholder="e.g. Basmati Rice Premium">
+                                    </div>
+
+                                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                                        <div class="form-group">
+                                            <label class="form-label">Barcode</label>
+                                            <input type="text" id="itemBarcode" class="form-input"
+                                                placeholder="Scan or enter barcode">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Barcode Weight/Qty</label>
+                                            <input type="text" id="itemBarcodeWeight" class="form-input"
+                                                placeholder="e.g. 1 KG, 500g">
+                                        </div>
+                                    </div>
+
+                                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                                        <div class="form-group">
+                                            <label class="form-label">Category</label>
+                                            <select id="itemCategory" class="form-select"></select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Batch No</label>
+                                            <input type="text" id="itemBatchNo" class="form-input"
+                                                placeholder="Enter batch number">
+                                        </div>
+                                    </div>
+
+                                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                                        <div class="form-group">
+                                            <label class="form-label">HS Code <span
+                                                    style="font-size:0.7rem; color:var(--text-muted); font-weight:400;">(IRD)</span></label>
+                                            <input type="text" id="itemHsCode" class="form-input" placeholder="e.g. 1006.30">
+                                            <small style="color:var(--text-muted); font-size:0.7rem;">⚠ Required
+                                                for IRD VAT
+                                                invoices</small>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Unit</label>
+                                            <select id="itemUnit" class="form-select" onchange="updateLowStockUnit()">
+                                                <option value="">— Select Unit —</option>
+                                                <option value="Pcs">Pcs (Pieces)</option>
+                                                <option value="Kg">Kg (Kilogram)</option>
+                                                <option value="Gm">Gm (Gram)</option>
+                                                <option value="Liter">Liter</option>
+                                                <option value="ML">ML (Milliliter)</option>
+                                                <option value="Meter">Meter</option>
+                                                <option value="Box">Box</option>
+                                                <option value="Dozen">Dozen</option>
+                                                <option value="Bag">Bag</option>
+                                                <option value="Sack">Sack</option>
+                                                <option value="Drum">Drum</option>
+                                                <option value="Carton">Carton</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.35rem;">
+                                            <label class="form-label" style="margin-bottom:0;">Expiry Date &amp; Note</label>
+                                            <div class="date-mode-toggle" style="display:flex; align-items:center; background:var(--bg-main, #f3f4f6); border-radius:1rem; padding:2px; border:1px solid var(--border-light, #e5e7eb);">
+                                                <button type="button" id="btnDateModeAD" class="date-toggle-btn" onclick="setDateMode('AD')" style="border:none; background:var(--accent-primary, #4f46e5); color:#ffffff; font-size:0.7rem; font-weight:700; padding:0.15rem 0.55rem; border-radius:0.8rem; cursor:pointer; transition:0.2s;">AD</button>
+                                                <button type="button" id="btnDateModeBS" class="date-toggle-btn" onclick="setDateMode('BS')" style="border:none; background:transparent; color:var(--text-secondary, #6b7280); font-size:0.7rem; font-weight:700; padding:0.15rem 0.55rem; border-radius:0.8rem; cursor:pointer; transition:0.2s;">BS</button>
+                                            </div>
+                                        </div>
+                                        <div style="display:flex; gap:0.5rem;">
+                                            <div style="position:relative; flex:1.2; display:flex; align-items:center;">
+                                                <input type="text" id="itemExpiry" class="form-input" placeholder="YYYY/MM/DD (AD)" maxlength="10" oninput="formatDateInput(this)" style="width:100%; padding-right:2rem;">
+                                                <input type="date" id="itemExpiryPicker" style="position:absolute; right:0; top:0; width:34px; height:100%; opacity:0; cursor:pointer;" onchange="handleDatePickerChange(this.value)">
+                                                <span style="position:absolute; right:0.55rem; pointer-events:none; color:var(--text-muted); font-size:0.85rem;" id="dateCalendarIcon">📅</span>
+                                            </div>
+                                            <input type="text" id="itemExpiryNote" class="form-input"
+                                                placeholder="Note (e.g. Best Before)" style="flex:2;">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- SECTION 2: Pricing, Tax, Stock & Supplier -->
+                                <div>
+                                    <div style="font-size:0.75rem; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--accent-primary); margin-bottom:1rem; padding-bottom:0.4rem; border-bottom:1px solid var(--border-light);">
+                                        💰 Pricing &amp; Tax
+                                    </div>
+
+                                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
+                                        <div class="form-group">
+                                            <label class="form-label">Purchase Rate <span id="purchaseRateUnitBadge" style="font-size:0.75rem; color:var(--accent-primary); font-weight:600;"></span></label>
+                                            <div class="stepper-input">
+                                                <button type="button" class="stepper-btn" onclick="stepValue('itemCost', -1)" aria-label="Decrease Purchase Rate">−</button>
+                                                <input type="number" id="itemCost" class="form-input stepper-val" min="0" step="0.01"
+                                                    placeholder="0.00" oninput="calcInventoryMargin()">
+                                                <button type="button" class="stepper-btn" onclick="stepValue('itemCost', 1)" aria-label="Increase Purchase Rate">+</button>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Selling Rate <span
+                                                    style="color:#ef4444">*</span> <span id="sellingRateUnitBadge" style="font-size:0.75rem; color:var(--accent-primary); font-weight:600;"></span></label>
+                                            <div class="stepper-input">
+                                                <button type="button" class="stepper-btn" onclick="stepValue('itemPrice', -1)" aria-label="Decrease Selling Rate">−</button>
+                                                <input type="number" id="itemPrice" class="form-input stepper-val" required min="0" step="0.01"
+                                                    placeholder="0.00" oninput="calcInventoryMargin()">
+                                                <button type="button" class="stepper-btn" onclick="stepValue('itemPrice', 1)" aria-label="Increase Selling Rate">+</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div style="display:flex; align-items:center; gap:0.5rem; margin-top:0.25rem;">
+                                        <span style="font-size:0.7rem; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.03em;">Margin:</span>
+                                        <span id="itemMarginDisplay" style="font-size:0.8rem; color:var(--text-muted);">—</span>
+                                    </div>
+
+                                    <div class="form-group" style="margin-top:0.85rem; margin-bottom:0.5rem;">
+                                        <label style="display:inline-flex; align-items:center; gap:0.5rem; cursor:pointer; font-weight:600; font-size:0.875rem; color:var(--text-primary); user-select:none;">
+                                            <input type="checkbox" id="enableTieredPricing" style="width:1.1rem; height:1.1rem; accent-color:var(--accent-primary); cursor:pointer;" onchange="toggleTieredPricingSection(this.checked)">
+                                            <span>Enable Quantity-Based Pricing (Tiers)</span>
+                                        </label>
+                                    </div>
+
+                                    <!-- Quantity-Based Pricing Tier Builder -->
+                                    <div id="tieredPricingSection" style="display:none; background:var(--bg-secondary, #f8fafc); border:1px solid var(--border-light, #e2e8f0); border-radius:0.5rem; padding:0.85rem; margin-top:0.5rem; margin-bottom:1rem;">
+                                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.6rem;">
+                                            <div style="font-size:0.85rem; font-weight:700; color:var(--text-primary);">
+                                                Pricing Tiers <span style="font-size:0.75rem; font-weight:500; color:var(--text-muted);">(based on Unit: <strong id="tierUnitBadge" style="color:var(--accent-primary);">Kg</strong>)</span>
+                                            </div>
+                                            <span id="tierAutoSaveStatus" style="font-size:0.75rem; color:var(--accent-success, #10b981); display:none; font-weight:600;">✓ Saved</span>
+                                        </div>
+
+                                        <div id="tierValidationErrors" style="display:none; padding:0.5rem 0.75rem; margin-bottom:0.6rem; background:rgba(239, 68, 68, 0.1); border:1px solid #ef4444; border-radius:0.35rem; color:#ef4444; font-size:0.78rem; font-weight:600; line-height:1.4;">
+                                        </div>
+
+                                        <div class="table-wrapper" style="overflow-x:auto; margin-bottom:0.6rem; border-radius:0.35rem; border:1px solid var(--border-light);">
+                                            <table style="width:100%; border-collapse:collapse; font-size:0.82rem; background:var(--bg-card, #fff);">
+                                                <thead>
+                                                    <tr style="background:var(--bg-main, #f1f5f9); border-bottom:1px solid var(--border-light); text-align:left;">
+                                                        <th style="padding:0.4rem 0.5rem; width:30%; font-size:0.75rem; text-transform:uppercase; color:var(--text-muted);">Min Qty</th>
+                                                        <th style="padding:0.4rem 0.5rem; width:30%; font-size:0.75rem; text-transform:uppercase; color:var(--text-muted);">Max Qty</th>
+                                                        <th style="padding:0.4rem 0.5rem; width:30%; font-size:0.75rem; text-transform:uppercase; color:var(--text-muted);">Rate/Unit (Rs.)</th>
+                                                        <th style="padding:0.4rem 0.5rem; width:10%; text-align:center; font-size:0.75rem; text-transform:uppercase; color:var(--text-muted);">✕</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="tierTableBody">
+                                                    <!-- Tier rows generated dynamically -->
+                                                </tbody>
+                                            </table>
+                                        </div>
+
+                                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                                            <button type="button" id="btnAddTier" class="btn btn-secondary" style="font-size:0.78rem; padding:0.3rem 0.7rem; display:inline-flex; align-items:center; gap:0.3rem;" onclick="addNewTierRow()">
+                                                <span>+ Add Tier</span>
+                                            </button>
+                                            <span id="tierCountHint" style="font-size:0.72rem; color:var(--text-muted);">1 to 5 tiers allowed</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group" style="margin-top:0.25rem;">
+                                        <label class="form-label">VAT Rate</label>
+                                        <div style="display:flex; gap:0.75rem; align-items:center; margin-top:0.25rem;">
+                                            <select id="itemVatType" class="form-select" onchange="handleVatTypeChange(this.value)" style="flex:1; height:38px; padding:0 0.75rem; font-size:0.875rem; line-height:38px; min-width:120px; box-sizing:border-box;">
+                                                <option value="none">No VAT</option>
+                                                <option value="0">0% VAT</option>
+                                                <option value="13" selected>13% VAT</option>
+                                                <option value="manual">Manual</option>
+                                            </select>
+                                            <div id="itemVatCustomWrapper" class="stepper-input" style="display:none; flex:1;">
+                                                <button type="button" class="stepper-btn" onclick="stepValue('itemVatCustom', -1)" aria-label="Decrease VAT %">−</button>
+                                                <input type="number" id="itemVatCustom" class="form-input stepper-val" min="0" max="100" step="0.01"
+                                                    placeholder="Enter %">
+                                                <button type="button" class="stepper-btn" onclick="stepValue('itemVatCustom', 1)" aria-label="Increase VAT %">+</button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div style="font-size:0.75rem; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--accent-primary); margin:1.25rem 0 1rem; padding-bottom:0.4rem; border-bottom:1px solid var(--border-light);">
+                                        📦 Stock &amp; Supplier
+                                    </div>
+
+                                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                                        <div class="form-group">
+                                            <label class="form-label">Opening Stock <span style="color:#ef4444">*</span> <span id="openingStockUnitBadge" style="font-size:0.75rem; color:var(--accent-primary); font-weight:600;"></span></label>
+                                            <div class="stepper-input">
+                                                <button type="button" class="stepper-btn" onclick="stepValue('itemStock', -1)" aria-label="Decrease Stock">−</button>
+                                                <input type="number" id="itemStock" class="form-input stepper-val" required min="0" step="0.001"
+                                                    placeholder="0">
+                                                <button type="button" class="stepper-btn" onclick="stepValue('itemStock', 1)" aria-label="Increase Stock">+</button>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Low Stock Alert <span id="lowStockUnitBadge" style="font-size:0.75rem; color:var(--accent-primary); font-weight:600;"></span></label>
+                                            <div class="stepper-input">
+                                                <button type="button" class="stepper-btn" onclick="stepValue('itemLowStock', -1)" aria-label="Decrease Low Stock Alert">−</button>
+                                                <input type="number" id="itemLowStock" class="form-input stepper-val" min="0"
+                                                    placeholder="e.g. 10">
+                                                <button type="button" class="stepper-btn" onclick="stepValue('itemLowStock', 1)" aria-label="Increase Low Stock Alert">+</button>
+                                            </div>
+                                            <small style="color:var(--text-muted); font-size:0.7rem;">Alert when
+                                                stock falls
+                                                below this</small>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label class="form-label">Supplier</label>
+                                        <input type="text" id="itemSupplier" class="form-input"
+                                            placeholder="e.g. Goldstar Trading">
+                                    </div>
+
+                                    <div class="form-group" style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px dashed var(--border-light); display: flex; align-items: center; justify-content: space-between; margin-bottom: 0;">
+                                        <div style="display:flex; align-items:center; gap:0.5rem;">
+                                            <label class="form-label" style="margin-bottom: 0; cursor: pointer; font-size:0.8rem;" for="itemStatus">Status:</label>
+                                            <span id="itemStatusLabel" style="font-size: 0.75rem; font-weight: 600; color: #10b981;">Active</span>
+                                        </div>
+                                        <label class="status-switch" title="Toggle Active / Inactive">
+                                            <input type="checkbox" id="itemStatus" checked onchange="handleProductStatusChange(this.checked)">
+                                            <span class="status-toggle-slider"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer" style="margin-top:1.5rem; padding-top:1rem; border-top:1px solid var(--border-light);">
+                        <button class="btn btn-secondary" onclick="goBackToInventory()">Back</button>
+                        <button class="btn btn-secondary" onclick="closeModal()">Clear</button>
+                        <button class="btn btn-primary" onclick="saveItem()">Save Product</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="js/nepali-date-converter.umd.js"></script>
+    <script src="js/nepalidate.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/business.js"></script>
+    <script src="js/theme.js"></script>
+    <script src="js/add-product.js"></script>
+    <script src="js/sidebar.js"></script>
+</body>
+
+</html>

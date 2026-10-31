@@ -1,0 +1,12 @@
+const fs = require('fs');
+const inv = fs.readFileSync('inventory.html', 'utf8');
+const mainIdx = inv.indexOf('<div class="main-content">');
+const header = inv.substring(0, mainIdx);
+const modalStart = inv.indexOf('<div class="modal" style="max-width: 720px; width: 96%;">');
+const modalEnd = inv.indexOf('</div>', inv.indexOf('<div class="modal-footer">')) + 6;
+let modalBody = inv.substring(modalStart, modalEnd);
+modalBody = modalBody.replace('<div class="modal" style="max-width: 720px; width: 96%;">', '<div class="card" style="max-width: 800px; margin: 0 auto; padding: 2rem;">');
+modalBody = modalBody.replace('<div class="modal-header">', '<div class="modal-header" style="display:none;">');
+const addProductHTML = header + '<div class="main-content">\n<h2 class="page-title" style="margin-bottom:1rem;">Add/Edit Product</h2>\n' + modalBody + '\n</div>\n</div>\n<script src="js/add-product.js"></script>\n</body>\n</html>';
+fs.writeFileSync('add-product.html', addProductHTML);
+console.log('done');

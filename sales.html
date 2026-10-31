@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales History - K Pos</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="manifest" href="manifest.json">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .filter-bar {
+            background: var(--bg-secondary);
+            padding: 0.5rem 1rem;
+            border-radius: 0.75rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            border: 1px solid var(--border-light);
+        }
+
+        .search-box {
+            flex: 1;
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 0.5rem 2.8rem 0.5rem 2.5rem;
+            border-radius: 0.5rem;
+            background: var(--bg-main);
+            border: 1px solid var(--border-light);
+            color: var(--text-primary);
+        }
+
+        .search-box svg {
+            position: absolute;
+            left: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+        }
+
+        .search-box button {
+            position: absolute;
+            right: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 1rem;
+            cursor: pointer;
+            display: none;
+            padding: 0;
+            line-height: 1;
+        }
+
+        @media (max-width: 768px) {
+            .filter-bar {
+                flex-direction: column;
+                align-items: stretch;
+                padding: 1rem;
+            }
+
+            .search-box {
+                width: 100%;
+                flex: none;
+            }
+
+            .date-range-filter {
+                width: 100%;
+                flex-wrap: wrap;
+            }
+
+            #filterRangeBtn {
+                flex: 1;
+                min-width: 0 !important;
+            }
+
+            .filter-bar .btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .content-area {
+                padding: 0.5rem 1rem !important;
+            }
+        }
+
+        .content-area {
+            padding: 0.5rem 1.5rem !important;
+        }
+
+        .table-container {
+            width: 100%;
+            overflow-x: auto;
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+            background: var(--bg-secondary);
+            border-radius: 1rem;
+            border: 1px solid var(--border-light);
+            margin-top: 0.5rem;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior-x: contain;
+            scrollbar-width: thin !important;
+            scrollbar-color: rgba(99, 102, 241, 0.4) transparent !important;
+            cursor: grab;
+        }
+
+        .table-container.is-dragging {
+            cursor: grabbing !important;
+            user-select: none;
+        }
+
+        .table-container.is-dragging * {
+            user-select: none;
+            pointer-events: none;
+        }
+
+        .table-container::-webkit-scrollbar {
+            height: 8px !important;
+            width: 8px !important;
+            display: block !important;
+        }
+
+        .table-container::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.03);
+            border-radius: 8px;
+            margin: 0 8px;
+        }
+
+        .table-container::-webkit-scrollbar-thumb {
+            background: rgba(99, 102, 241, 0.35) !important;
+            border-radius: 8px;
+            transition: background 0.2s ease;
+        }
+
+        .table-container::-webkit-scrollbar-thumb:hover {
+            background: rgba(99, 102, 241, 0.7) !important;
+        }
+
+        .table-wrapper {
+            min-width: 1000px;
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .table-container th,
+        .table-container td {
+            padding: 0.75rem 1rem !important;
+            border-bottom: 1px solid var(--border-light);
+            text-align: left;
+        }
+
+        th {
+            background: rgba(var(--accent-primary-rgb), 0.05);
+            font-weight: 700;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+
+
+        @media print {
+            body {
+                visibility: hidden;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                height: auto;
+                overflow: visible;
+            }
+
+            #printableArea {
+                visibility: visible;
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: auto;
+                display: block !important;
+                overflow: visible;
+            }
+
+            #printableArea>div {
+                height: auto !important;
+                overflow: visible !important;
+                page-break-inside: auto;
+            }
+
+            #printableArea * {
+                visibility: visible;
+            }
+
+            #printableArea table {
+                display: table !important;
+                page-break-inside: auto;
+            }
+
+            #printableArea tr {
+                page-break-inside: avoid;
+                display: table-row !important;
+            }
+
+            #printableArea tr.hidden-print,
+            #printableArea tr[style*="display: none"],
+            #printableArea tr[style*="display:none"] {
+                display: none !important;
+            }
+        }
+
+        #printableArea {
+            display: none;
+        }
+
+        /* Picker Calendar Styles */
+        .cal-cell {
+            padding: 10px 5px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+
+        .cal-cell:hover:not(.empty) {
+            background: var(--bg-secondary);
+            border-color: var(--border-light);
+        }
+
+        .cal-cell.range-start,
+        .cal-cell.range-end {
+            background: var(--accent-primary) !important;
+            color: var(--text-on-accent) !important;
+        }
+
+        .cal-cell.range-start *,
+        .cal-cell.range-end * {
+            background: transparent !important;
+            color: var(--text-on-accent) !important;
+            opacity: 1 !important;
+        }
+
+        .cal-cell.in-range {
+            background: rgba(var(--accent-primary-rgb), 0.1) !important;
+            border-radius: 0;
+            border-color: transparent;
+        }
+
+        .cal-nav-btn {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .cal-nav-btn:hover {
+            background: var(--border-light) !important;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <!-- Mobile Sidebar Header -->
+            <div class="sidebar-header mobile-only">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <div class="brand-text">K Pos</div>
+                </div>
+                <button class="close-sidebar-btn" onclick="toggleSidebar()">&times;</button>
+            </div>
+
+            <div class="brand" id="sidebarBrand">K Pos</div>
+            <nav class="nav-menu">
+                <a href="index.html" class="nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                    </svg>
+                    <span>Dashboard</span>
+                </a>
+                <a href="billing.html" class="nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                    <span>Billing / POS</span>
+                </a>
+                <a href="sales.html" class="nav-link active">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m.599-.747C13.101 16.559 12.552 16 12 16c-1.11 0-2.08-.402-2.599-1M12 16V7" />
+                    </svg>
+                    <span>Sales</span>
+                </a>
+                <a href="reports.html" class="nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span>Reports</span>
+                </a>
+                <a href="purchase.html" class="nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                    </svg>
+                    <span>Purchase Invoice</span>
+                </a>
+
+                <a href="sales-invoice.html" class="nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
+                    </svg>
+                    <span>Sales Tax Invoice</span>
+                </a>
+
+                <a href="ar.html" class="nav-link">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z">
+                        </path>
+                    </svg>
+                    <span>CRM</span>
+                </a>
+                <div class="nav-item-group">
+                    <a href="inventory.html" class="nav-link">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                        </svg>
+                        <span>Inventory</span>
+                    </a>
+                    <div class="sub-menu">
+                        <a href="inventory.html" class="nav-sub-link">List Product</a>
+                        <a href="add-product.html" class="nav-sub-link">Add Product</a>
+                        <a href="category.html" class="nav-sub-link">Category</a>
+                        <a href="barcode.html" class="nav-sub-link">Barcodes</a>
+                    </div>
+                </div>
+                <a href="payroll.html" class="nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                        <circle cx="8.5" cy="7" r="4" />
+                        <polyline points="17 11 19 13 23 9" />
+                    </svg>
+                    <span>Payroll</span>
+                </a>
+
+                <a href="settings.html" class="nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <span>Settings</span>
+                </a>
+            </nav>
+
+            <!-- Sidebar Footer for Mobile (Shift Info) -->
+            <div class="sidebar-footer mobile-only">
+                <div class="shift-section">
+                    <span class="shift-label">Shift</span>
+                    <div class="shift-user">
+                        <div class="user-avatar-sm" id="sidebarAvatar">AD</div>
+                        <span class="user-name-sm" id="sidebarCashierName">Admin User</span>
+                    </div>
+                </div>
+                <div class="sidebar-copyright">
+                    <p>Ã‚Â© 2026 K Pos App</p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="top-bar">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <button class="menu-toggle mobile-only" onclick="toggleSidebar()"
+                        style="background: none; border: none; color: var(--text-primary); cursor: pointer; padding: 0.5rem; display: flex; align-items: center; justify-content: center;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </button>
+                    <h1 class="logo-text">K Pos</h1>
+                </div>
+                <div style="display: flex; align-items: center; gap: 1.5rem;">
+                    <!-- Notification Bell -->
+                    <div style="position: relative;" id="notificationContainer">
+                        <div style="cursor: pointer;" onclick="toggleNotificationPanel()" title="Notifications">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" style="color: var(--text-secondary);">
+                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                            </svg>
+                            <!-- Red notification dot -->
+                            <div id="notificationDot"
+                                style="display: none; position: absolute; top: -2px; right: -2px; width: 8px; height: 8px; background: #ef4444; border-radius: 50%; border: 2px solid var(--bg-secondary);">
+                            </div>
+                        </div>
+
+                        <!-- Notification Panel -->
+                        <div id="notificationPanel" class="notification-panel">
+                            <div class="notification-header">
+                                <span>Notifications</span>
+                                <button onclick="clearNotifications()"
+                                    style="background: none; border: none; font-size: 0.7rem; color: var(--accent-primary); cursor: pointer;">Clear
+                                    All</button>
+                            </div>
+                            <div id="notificationList" class="notification-list">
+                                <!-- Alerts will be injected here -->
+                                <div
+                                    style="padding: 1rem; text-align: center; color: var(--text-muted); font-size: 0.8rem;">
+                                    No new notifications</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="user-profile" onclick="openCashierModal()" style="cursor: pointer;">
+                        <span id="cashierName">Admin User</span>
+                        <div class="user-avatar" id="cashierAvatar">AD</div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="content-area">
+
+                <div class="filter-bar">
+                    <div class="search-box">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                        <input type="text" id="salesSearch" placeholder="Search by Bill No or Customer PAN...">
+                        <button type="button" id="salesSearchClear" aria-label="Clear search">&times;</button>
+                    </div>
+                    <div class="date-range-filter" style="display: flex; align-items: center; gap: 0.5rem;">
+                        <button id="filterRangeBtn" onclick="openRangePicker()"
+                            style="display: flex; align-items: center; gap: 0.5rem; padding: 0.55rem 1rem; background: var(--bg-secondary); border: 1px solid var(--border-light); border-radius: 0.6rem; cursor: pointer; color: var(--text-primary); font-size: 0.875rem; white-space: nowrap; min-width: 220px;">
+                            <span id="filterRangeLabel" style="flex: 1; text-align: left;">All Recent Sales</span>
+                        </button>
+                        <button id="filterClearBtn" onclick="clearFilterRange()" title="Clear date filter"
+                            style="display: none; padding: 0.55rem 0.65rem; background: var(--bg-secondary); border: 1px solid var(--border-light); border-radius: 0.6rem; cursor: pointer; color: var(--text-muted); font-size: 1rem; line-height: 1;">&times;</button>
+                        <!-- Hidden inputs still used by loadSales() -->
+                        <input type="hidden" id="startDate">
+                        <input type="hidden" id="endDate">
+                    </div>
+                    <button class="btn btn-secondary" onclick="exportCSV()">Export CSV</button>
+                </div>
+
+                <div class="table-container">
+                    <div class="table-wrapper">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr>
+                                    <th>Bill No</th>
+                                    <th id="th-type">Type</th>
+                                    <th>Date & Time</th>
+                                    <th>Bill To</th>
+                                    <th>Address</th>
+                                    <th>Phone No</th>
+                                    <th>PAN No</th>
+
+                                    <th>Mode</th>
+                                    <th>Status</th>
+                                    <th style="text-align: center;">Items</th>
+                                    <th style="text-align: center;">Qty</th>
+                                    <th style="text-align: right;" id="th-vat">VAT</th>
+                                    <th style="text-align: right;">Total</th>
+                                    <th style="text-align: right;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sales-list">
+                                <!-- Data populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+
+    </div>
+    </div>
+
+    <!-- Cashier Name Modal -->
+    <div id="cashierModal" class="modal-overlay" onclick="closeCashierModal()">
+        <div class="modal" style="max-width: 400px;" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <h3 style="margin: 0;">Select Cashier</h3>
+                    <label class="theme-toggle" onclick="event.stopPropagation()">
+                        <input type="checkbox" id="themeCheckbox" onchange="toggleTheme()">
+                        <span class="theme-slider">
+                            <span class="theme-icon moon-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor">
+                                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                                </svg>
+                            </span>
+                            <span class="theme-icon sun-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor">
+                                    <circle cx="12" cy="12" r="5"></circle>
+                                    <line x1="12" y1="1" x2="12" y2="3"></line>
+                                    <line x1="12" y1="21" x2="12" y2="23"></line>
+                                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                                    <line x1="1" y1="12" x2="3" y2="12"></line>
+                                    <line x1="21" y1="12" x2="23" y2="12"></line>
+                                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                                </svg>
+                            </span>
+                        </span>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div id="cashierListContainer">
+                    <!-- Grid of cashiers will be injected here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="dateRangeModal" class="modal-overlay" style="z-index: 2000;">
+        <div class="modal" style="max-width: 1000px; padding: 0; width: 95%;">
+            <div class="modal-body" style="padding: 1.5rem; overflow-x: auto;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+                    <button class="cal-nav-btn" onclick="changePickerMonth(-1)"
+                        style="padding: 0.5rem 1rem; background: var(--bg-secondary); border: 1px solid var(--border-light); border-radius: 0.4rem; cursor: pointer;">&lt;</button>
+                    <div id="pickerCalendarContainer"
+                        style="display: flex; gap: 2rem; flex: 1; justify-content: center;">
+                        <!-- Calendars Injected Here -->
+                    </div>
+                    <button class="cal-nav-btn" onclick="changePickerMonth(1)"
+                        style="padding: 0.5rem 1rem; background: var(--bg-secondary); border: 1px solid var(--border-light); border-radius: 0.4rem; cursor: pointer;">&gt;</button>
+                </div>
+
+                <div
+                    style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-light); padding-top: 1rem;">
+                    <button class="btn btn-primary" onclick="confirmDateRange()" style="padding: 0.6rem 2rem;">Apply
+                        Filter</button>
+                    <span id="rangeSelectionInfo"
+                        style="font-size: 0.9rem; color: var(--text-muted); font-weight: 500;">Select dates</span>
+                </div>
+            </div>
+            <button onclick="closeRangePicker()"
+                style="position: absolute; top: 15px; right: 15px; background: none; border: none; cursor: pointer; font-size: 1.5rem; color: var(--text-secondary);">&times;</button>
+        </div>
+    </div>
+
+    <!-- Partial Return Modal -->
+    <div id="returnModal" class="modal-overlay" style="z-index: 3000;">
+        <div class="modal" style="max-width: 700px; width: 95%;">
+            <div class="modal-header">
+                <h3 id="returnModalTitle">Issue Return (Credit Note)</h3>
+                <button class="btn btn-secondary" onclick="closeReturnModal()" style="padding: 0.4rem;">✕</button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">
+                    Select items and enter the quantity to return. Stock will be restored for returned items.
+                </p>
+                <div class="table-container" style="max-height: 400px; overflow-y: auto;">
+                    <table style="width: 100%;">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th style="text-align: right;">Sold Qty</th>
+                                <th style="text-align: right; width: 140px;">
+                                    <div
+                                        style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.2rem;">
+                                        <span style="font-size: 0.8rem; opacity: 0.8;">Return All</span>
+                                        <label class="switch"
+                                            style="position: relative; display: inline-block; width: 36px; height: 20px;">
+                                            <input type="checkbox" id="returnAllToggle"
+                                                onclick="toggleReturnAll(this.checked)"
+                                                style="opacity: 0; width: 0; height: 0;">
+                                            <span class="slider round"
+                                                style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--border-light); transition: .4s; border-radius: 20px;">
+                                                <style>
+                                                    .slider:before {
+                                                        position: absolute;
+                                                        content: "";
+                                                        height: 16px;
+                                                        width: 16px;
+                                                        left: 2px;
+                                                        bottom: 2px;
+                                                        background-color: white;
+                                                        transition: .4s;
+                                                        border-radius: 50%;
+                                                    }
+
+                                                    input:checked+.slider {
+                                                        background-color: var(--accent-primary);
+                                                    }
+
+                                                    input:checked+.slider:before {
+                                                        transform: translateX(16px);
+                                                    }
+                                                </style>
+                                            </span>
+                                        </label>
+                                    </div>
+                                </th>
+                                <th style="text-align: right; width: 120px;">Refund</th>
+                            </tr>
+                        </thead>
+                        <tbody id="returnItemsList">
+                            <!-- Items populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <div
+                    style="margin-top: 1.5rem; padding: 1.25rem; background: rgba(var(--accent-primary-rgb), 0.06); border-radius: 0.8rem; border: 1px solid var(--border-light); box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; border-bottom: 1px dashed var(--border-light); padding-bottom: 0.8rem;">
+                        <span style="font-weight: 600; font-size: 0.9rem; color: var(--text-muted);">Invoice ID:</span>
+                        <span id="returnBillNo"
+                            style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary);">#---</span>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem;">
+                        <span
+                            style="font-weight: 700; font-size: 1.15rem; color: var(--text-primary); white-space: nowrap;">Amount
+                            to be Refunded:</span>
+                        <div style="flex: 1; text-align: right;">
+                            <span id="returnRefundTotal"
+                                style="font-weight: 900; font-size: 1.6rem; color: var(--accent-primary); white-space: nowrap; font-family: 'Inter', sans-serif;">Rs.
+                                0.00</span>
+                        </div>
+                    </div>
+                </div>
+                <div style="margin-top: 1rem;">
+                    <label style="display: block; margin-bottom: 0.4rem; font-size: 0.85rem; font-weight: 600;">Reason
+                        for Return</label>
+                    <input type="text" id="returnReason" class="form-input"
+                        placeholder="e.g., Defective item, Customer changed mind" style="width: 100%;">
+                </div>
+            </div>
+            <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 0.75rem; padding: 1.25rem;">
+                <button class="btn btn-secondary" onclick="closeReturnModal()">Cancel</button>
+                <button class="btn btn-primary" id="confirmReturnBtn" onclick="processReturn()">Confirm Return</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Receipt Preview Modal -->
+    <div id="receiptPreviewModal" class="modal-overlay" style="z-index: 3500;" onclick="closeReceiptPreview()">
+        <div class="modal"
+            style="max-width: 600px; width: 95%; max-height: 92vh; display: flex; flex-direction: column;"
+            onclick="event.stopPropagation()">
+            <div class="modal-header"
+                style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.25rem; border-bottom: 1px solid var(--border-light);">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span style="font-size: 1.1rem;">👁</span>
+                    <h3 id="receiptPreviewTitle" style="margin: 0; font-size: 1.1rem;">Receipt Preview</h3>
+                </div>
+                <button class="btn btn-secondary" onclick="closeReceiptPreview()"
+                    style="padding: 0.35rem 0.6rem; font-size: 0.9rem;" title="Close">✕</button>
+            </div>
+            <div class="modal-body"
+                style="padding: 1.5rem 1rem; overflow-y: auto; overflow-x: hidden; background: var(--bg-main); display: flex; justify-content: center; align-items: flex-start; flex: 1;">
+                <div id="receiptPreviewPaper"
+                    style="background: #ffffff; color: #000000; box-shadow: 0 4px 15px rgba(0,0,0,0.12); border-radius: 4px; border: 1px solid #e2e8f0; width: max-content; min-width: 58mm; max-width: 100%; box-sizing: border-box; overflow-x: hidden;">
+                    <!-- Receipt Content Rendered Here -->
+                </div>
+            </div>
+            <div class="modal-footer"
+                style="display: flex; justify-content: flex-end; gap: 0.75rem; padding: 0.85rem 1.25rem; border-top: 1px solid var(--border-light); background: var(--bg-secondary);">
+                <button class="btn btn-secondary" onclick="closeReceiptPreview()"
+                    style="padding: 0.5rem 1.25rem;">Close</button>
+                <button class="btn btn-primary" id="receiptPreviewPrintBtn" onclick="printFromPreview()"
+                    style="padding: 0.5rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4H7v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                    </svg>
+                    Print
+                </button>
+            </div>
+        </div>
+
+
+    </div>
+
+    <!-- Print Styles (Moved outside printableArea to prevent printing) -->
+    <style>
+        @media print {
+
+            html,
+            body {
+                width: 100%;
+                height: auto;
+                margin: 0;
+                padding: 0;
+                overflow: visible;
+            }
+
+            body>* {
+                display: none !important;
+            }
+
+            #printableArea {
+                display: block !important;
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: auto;
+                margin: 0;
+                padding: 0;
+                overflow: visible;
+            }
+
+            #printableArea>div {
+                height: auto !important;
+                overflow: visible !important;
+                page-break-inside: auto;
+            }
+
+            #printableArea * {
+                visibility: visible !important;
+            }
+
+            #printableArea table {
+                display: table !important;
+                width: 100%;
+                border-collapse: collapse;
+            }
+
+            #printableArea thead {
+                display: table-header-group !important;
+            }
+
+            #printableArea tbody {
+                display: table-row-group !important;
+            }
+
+            #printableArea tr {
+                display: table-row !important;
+                page-break-inside: avoid;
+            }
+
+            #printableArea th,
+            #printableArea td {
+                display: table-cell !important;
+                padding: 0 1px;
+                line-height: 1.1;
+                border: none !important;
+            }
+
+            #printableArea>div {
+                container-type: inline-size;
+                font-size: 3.6vw !important;
+            }
+
+            #p-totalWords-label,
+            #p-totalWords {
+                font-size: var(--receipt-words-font-size, 12px) !important;
+                line-height: 1.1 !important;
+                word-break: normal !important;
+                overflow-wrap: break-word !important;
+                white-space: normal !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+
+            #p-totalWords-row {
+                line-height: 1.1 !important;
+                margin-top: 1px !important;
+                margin-bottom: 1px !important;
+                padding-bottom: 1px !important;
+            }
+
+            #p-footer {
+                font-size: var(--receipt-footer-font-size, 8px) !important;
+                word-break: normal !important;
+                overflow-wrap: break-word !important;
+                white-space: normal !important;
+                max-width: 100% !important;
+            }
+
+            #p-metaTable,
+            #p-metaTable td,
+            #p-metaTable span {
+                font-size: var(--receipt-meta-font-size, 10px) !important;
+            }
+
+            #p-headerTable,
+            #p-headerTable th,
+            #p-snLabel,
+            #p-particularsLabel,
+            #p-qtyLabel,
+            #p-rateLabel,
+            #p-amtLabel {
+                font-size: var(--receipt-th-font-size, 10px) !important;
+                white-space: nowrap !important;
+                overflow: hidden !important;
+                text-overflow: clip !important;
+            }
+
+            #p-itemsTable,
+            #p-itemsTable td,
+            #p-itemsTable span,
+            #p-totalsTable,
+            #p-totalsTable td,
+            #p-totalsTable span {
+                font-size: var(--receipt-td-font-size, 10px) !important;
+            }
+
+            #printableArea {
+                padding-top: 4mm !important;
+            }
+
+            #p-storeName {
+                font-size: var(--receipt-header-font-size, 30px) !important;
+                margin-top: 2mm !important;
+                padding-top: 1mm !important;
+            }
+
+            #p-address,
+            #p-vat-row,
+            #p-phone-row {
+                font-size: var(--receipt-header-info-font-size, 11px) !important;
+                word-break: normal !important;
+                overflow-wrap: break-word !important;
+                white-space: normal !important;
+                max-width: 100% !important;
+            }
+
+            #p-bill-title {
+                font-size: var(--receipt-bill-title-font-size, 13px) !important;
+            }
+
+            @page {
+                margin: 0mm;
+            }
+        }
+    </style>
+
+    <!-- Hidden Printable Receipt Area -->
+    <div id="printableArea" style="display: none;">
+        <div
+            style="width: 100%; padding: 0; color: #000; background: white; font-family: 'Courier New', monospace; font-size: 11px; font-weight: normal; line-height: 1.25; word-wrap: break-word; word-break: normal; overflow-wrap: break-word;">
+            <div style="max-width: 100%; margin: 0 auto; box-sizing: border-box; padding: 4mm 1mm 0 1mm;">
+                <!-- Header -->
+                <div style="text-align: center; margin-bottom: 4px; padding-top: 2mm;">
+                    <div id="p-storeName"
+                        style="font-family: Arial, Helvetica, sans-serif; font-size: 10em; line-height: 1.20; margin-bottom: 3px; font-weight: 800; color: #000; letter-spacing: 0; word-break: normal; overflow-wrap: normal; white-space: nowrap; max-width: 100%;">
+                        STORE NAME</div>
+                    <div id="p-address"
+                        style="font-family: normal ; font-size: 1.1em; margin-bottom: 2px; color: #000; font-weight: 400; word-break: normal; overflow-wrap: break-word; white-space: normal; max-width: 100%;">
+                        Address Line 1</div>
+                    <div id="p-phone-row"
+                        style="font-family: normal ; font-size: 1.1em; margin-bottom: 2px; color: #000; font-weight: 400; word-break: normal; overflow-wrap: break-word; white-space: normal; max-width: 100%;">
+                        Tel : <span style="font-weight: normal;" id="p-phone">...</span></div>
+                    <div id="p-vat-row"
+                        style="font-family:normal; font-size: 1.1em; margin-bottom: 4px; color: #000; font-weight: 400; word-break: normal; overflow-wrap: break-word; white-space: normal; max-width: 100%;">
+                        <span id="p-vat-label">PAN</span> No : <span style="font-weight:normal;" id="p-vatNo">...</span>
+                    </div>
+                    <div id="p-bill-title"
+                        style="font-size: 3em; font-weight:600;  font-family : Arial, Helvetica, sans-serif; margin-top: 5px; margin-bottom: 5px; text-transform: uppercase; color: #000; border-bottom: 1px dashed #000; padding-bottom: 4px;">
+                        ABBREVIATED TAX INVOICE</div>
+                </div>
+
+                <!-- Metadata -->
+                <table id="p-metaTable"
+                    style="width: 100%; font-size: var(--receipt-meta-font-size, 10px); border-collapse: collapse; font-family: inherit; color: #000; line-height: 1.15;">
+                    <tr>
+                        <td style="width: 30%; vertical-align: top; padding: 0.5px 0; font-weight: normal;">Bill Date
+                        </td>
+                        <td style="width: 4%; text-align: center; vertical-align: top; padding: 0.5px 0;">:</td>
+                        <td style="width: 66%; vertical-align: top; padding: 0.5px 0;">
+                            <span id="p-date-AD" style="font-style: italic;"></span>
+                            <span id="p-date-BS" style="font-style: italic;"></span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width: 30%; padding: 0.5px 0; font-weight: normal;">Bill No</td>
+                        <td style="width: 4%; text-align: center; padding: 0.5px 0;">:</td>
+                        <td style="width: 66%; padding: 0.5px 0;"><span id="p-billNo"
+                                style="font-weight: normal;"></span></td>
+                    </tr>
+
+                    <tr id="p-customer-row">
+                        <td style="width: 30%; padding: 0.5px 0; font-weight: normal;">Bill To</td>
+                        <td style="width: 4%; text-align: center; padding: 0.5px 0;">:</td>
+                        <td style="width: 66%; padding: 0.5px 0;"><span id="p-customer"></span></td>
+                    </tr>
+                    <tr id="p-customerAddress-row">
+                        <td style="width: 30%; padding: 0.5px 0; font-weight: normal;">Address</td>
+                        <td style="width: 4%; text-align: center; padding: 0.5px 0;">:</td>
+                        <td style="width: 66%; padding: 0.5px 0;"><span id="p-customerAddress"></span></td>
+                    </tr>
+
+                    <tr id="p-customerPhone-row">
+                        <td style="width: 30%; padding: 0.5px 0; font-weight: normal;">Phone No</td>
+                        <td style="width: 4%; text-align: center; padding: 0.5px 0;">:</td>
+                        <td style="width: 66%; padding: 0.5px 0;"><span id="p-customerPhone"></span></td>
+                    </tr>
+
+                    <tr id="p-customerpan-row">
+                        <td style="width: 30%; padding: 0.5px 0; font-weight: normal;">PAN No</td>
+                        <td style="width: 4%; text-align: center; padding: 0.5px 0;">:</td>
+                        <td style="width: 66%; padding: 0.5px 0;"><span id="p-customerpan"></span></td>
+                    </tr>
+                    <tr>
+                        <td style="width: 30%; padding: 0.5px 0; font-weight: normal;">Payment</td>
+                        <td style="width: 4%; text-align: center; padding: 0.5px 0;">:</td>
+                        <td style="width: 66%; padding: 0.5px 0;"><span id="p-payMode"></span></td>
+                    </tr>
+                    <tr>
+                        <td style="width: 30%; padding: 0.5px 0; font-weight: normal;">Cashier</td>
+                        <td style="width: 4%; text-align: center; padding: 0.5px 0;">:</td>
+                        <td style="width: 66%; padding: 0.5px 0;"><span id="p-cashier"></span></td>
+                    </tr>
+                </table>
+
+                <div style="border-top: 1px dashed #000; margin: 4px 0 0 0;"></div>
+
+                <!-- Items Header -->
+                <table id="p-headerTable"
+                    style="width: 100%; font-size: var(--receipt-th-font-size, 10px); border-collapse: collapse; font-family: inherit; table-layout: fixed; color:#010203;">
+
+                    <thead>
+                        <tr style="font-weight: normal;">
+                            <th id="p-snLabel"
+                                style="padding: 4px 1px 4px 0; text-align: left; width: 7%; text-transform: none !important; font-weight: normal; color:#010203; white-space: nowrap;">
+                                Sn
+                            </th>
+
+                            <th id="p-particularsLabel"
+                                style="padding: 4px 2px 4px 0; text-align: left; width: 37%; text-transform: none !important; font-weight: normal; color:#010203; white-space: nowrap;">
+                                PARTICULARS</th>
+                            <th id="p-qtyLabel"
+                                style="padding: 4px 2px; text-align: right; width: 17%; text-transform: none !important; font-weight: normal; color:#010203; white-space: nowrap;">
+                                QTY</th>
+                            <th id="p-rateLabel"
+                                style="padding: 4px 2px; text-align: right; width: 18%; text-transform: none !important; font-weight: normal; color:#010203; white-space: nowrap;">
+                                RATE</th>
+                            <th id="p-amtLabel"
+                                style="padding: 4px 0 4px 2px; text-align: right; width: 21%; text-transform: none !important; font-weight: normal; color:#010203; white-space: nowrap;">
+                                AMT</th>
+                        </tr>
+                    </thead>
+
+                </table>
+                <div style="border-top: 1px dashed #000; margin: 0;"></div>
+
+                <!-- Items List -->
+                <table id="p-itemsTable"
+                    style="width: 100%; font-size: var(--receipt-td-font-size, 10px); border-collapse: collapse; font-family: inherit; table-layout: fixed; color: #000; font-weight: normal;">
+                    <tbody id="p-items">
+                        <!-- Content will be injected -->
+                    </tbody>
+                </table>
+
+                <!-- Totals -->
+                <div style="border-top: 1px dashed #000; margin: 0;"></div>
+                <table id="p-totalsTable"
+                    style="width: 100%; font-size: var(--receipt-td-font-size, 10px); border-collapse: collapse; font-family: inherit; table-layout: fixed; margin-top: 2px; color: #000; font-weight: normal;">
+                    <tr id="p-gross-row" style="font-weight: normal;">
+                        <td colspan="3" style="width: 56%; text-align: left; padding: 1.5px 0;">Gross Amount</td>
+                        <td style="width: 10%; text-align: center; padding: 1.5px 0;">:</td>
+                        <td style="width: 34%; text-align: right; padding: 1.5px 0; white-space: nowrap;"><span
+                                id="p-gross">0.00</span></td>
+                    </tr>
+                    <tr id="p-discount-row" style="display: none; font-weight: normal;">
+                        <td colspan="3" style="width: 56%; text-align: left; padding: 1.5px 0;">Discount</td>
+                        <td style="width: 10%; text-align: center; padding: 1.5px 0;">:</td>
+                        <td style="width: 34%; text-align: right; padding: 1.5px 0; white-space: nowrap;"><span
+                                id="p-discount">0.00</span></td>
+                    </tr>
+                    <tr id="p-taxable-row" style="font-weight: normal;">
+                        <td colspan="3" style="width: 56%; text-align: left; padding: 1.5px 0;">Taxable</td>
+                        <td style="width: 10%; text-align: center; padding: 1.5px 0;">:</td>
+                        <td style="width: 34%; text-align: right; padding: 1.5px 0; white-space: nowrap;"><span
+                                id="p-taxable">0.00</span></td>
+                    </tr>
+                    <tr id="p-nontaxable-row" style="font-weight: normal;">
+                        <td colspan="3" style="width: 56%; text-align: left; padding: 1.5px 0;">NonTaxable</td>
+                        <td style="width: 10%; text-align: center; padding: 1.5px 0;">:</td>
+                        <td style="width: 34%; text-align: right; padding: 1.5px 0; white-space: nowrap;"><span
+                                id="p-nontaxable">0.00</span></td>
+                    </tr>
+                    <tr id="p-vat-breakdown-row" style="font-weight: normal;">
+                        <td id="p-vat-breakdown-label" colspan="3"
+                            style="width: 56%; text-align: left; padding: 1.5px 0;">VAT 13%</td>
+                        <td style="width: 10%; text-align: center; padding: 1.5px 0;">:</td>
+                        <td style="width: 34%; text-align: right; padding: 1.5px 0; white-space: nowrap;"><span
+                                id="p-vatAmount">0.00</span></td>
+                    </tr>
+                    <tr id="p-net-row" style="font-weight: normal;">
+                        <td id="p-net-label" colspan="3"
+                            style="text-align: left; padding: 1.5px 0; line-height: 1.1; font-weight: normal;">
+                            Net Amount</td>
+                        <td style="width: 10%; text-align: center; padding: 1.5px 0;">:</td>
+                        <td id="p-net-total-cell"
+                            style="width: 34%; text-align: right; padding: 1.5px 0; font-weight: normal; white-space: nowrap;">
+                            <span id="p-total">0.00</span>
+                        </td>
+                    </tr>
+                    <tr id="p-tender-divider-row">
+                        <td colspan="5" style="padding: 0;">
+                            <div style="border-top: 1px dashed #000; margin: 2px 0;"></div>
+                        </td>
+                    </tr>
+                    <tr id="p-tender-row" style="font-weight: normal;">
+                        <td colspan="3" style="width: 56%; text-align: left; padding: 1.5px 0;">Tender</td>
+                        <td style="width: 10%; text-align: center; padding: 1.5px 0;">:</td>
+                        <td style="width: 34%; text-align: right; padding: 1.5px 0; white-space: nowrap;"><span
+                                id="p-tendered">0.00</span></td>
+                    </tr>
+                    <tr id="p-change-row" style="font-weight: normal;">
+                        <td colspan="3" style="width: 56%; text-align: left; padding: 1.5px 0;">Change</td>
+                        <td style="width: 10%; text-align: center; padding: 1.5px 0;">:</td>
+                        <td style="width: 34%; text-align: right; padding: 1.5px 0; white-space: nowrap;"><span
+                                id="p-change">0.00</span></td>
+                    </tr>
+                    <tr id="p-qty-divider-row">
+                        <td colspan="5" style="padding: 0;">
+                            <div style="border-top: 1px dashed #000; margin: 2px 0;"></div>
+                        </td>
+                    </tr>
+                    <tr id="p-total-qty-row" style="font-weight: normal;">
+                        <td colspan="3" style="width: 56%; text-align: left; padding: 1.5px 0;">Total Qty</td>
+                        <td style="width: 10%; text-align: center; padding: 1.5px 0;">:</td>
+                        <td style="width: 34%; text-align: right; padding: 1.5px 0; white-space: nowrap;"><span
+                                id="p-totalQty">0.00</span></td>
+                    </tr>
+                </table>
+
+                <div style="border-top: 1px dashed #000; margin: 2px 0 2px 0;"></div>
+
+                <div id="p-totalWords-row"
+                    style="margin: 1px 0; border-bottom: 1px dashed #000; padding: 1px 0; line-height: 1.15; font-size: inherit;">
+                    <span id="p-totalWords-label"
+                        style="font-weight: normal; color: #000; font-size: inherit; line-height: inherit; word-break: normal; overflow-wrap: break-word; white-space: normal; margin: 0; padding: 0;">In
+                        Words: </span><span id="p-totalWords"
+                        style="line-height: inherit; font-size: inherit; word-wrap: normal; word-break: normal; overflow-wrap: break-word; white-space: normal; color: #000; font-weight: normal; margin: 0; padding: 0;"></span>
+                </div>
+
+                <!-- Footer -->
+                <div style="text-align: center; margin-top: 0px; font-size: 0.9em; margin-bottom: 1px; color: #000; font-weight: normal; word-wrap: break-word; word-break: normal; overflow-wrap: break-word; white-space: normal; max-width: 100%;"
+                    id="p-footer">Thank you for your visit!</div>
+                <div style="border-top: 1px dashed #000; margin: 5px 0;"></div>
+            </div>
+        </div>
+    </div>
+
+
+    <script src="js/nepali-date-converter.umd.js"></script>
+    <script src="js/nepalidate.js"></script>
+    <script src="js/theme.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/business.js"></script>
+    <script src="js/cashier.js"></script>
+    <script src="js/notifications.js"></script>
+    <script src="js/sales.js"></script>
+    <script src="js/sw-register.js"></script>
+    <script src="js/sidebar-brand.js"></script>
+    <script src="js/sidebar.js"></script>
+</body>
+
+</html>

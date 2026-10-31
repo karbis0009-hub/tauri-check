@@ -1,0 +1,1491 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer CRM &amp; AR - K Pos</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="manifest" href="manifest.json">
+    <style>
+        .top-bar > div:first-child > div:nth-child(2) {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            min-width: 0;
+        }
+
+        .top-bar > div:first-child > div:nth-child(2) > span {
+            display: none;
+        }
+
+        /* ============ CRM PALETTE & CONTRAST TOKENS ============ */
+        :root {
+            --crm-accent: #4f46e5;
+            --crm-accent-hover: #4338ca;
+            --crm-accent-rgb: 79, 70, 229;
+            --crm-accent-bg: rgba(79, 70, 229, 0.08);
+            --crm-accent-bg-active: rgba(79, 70, 229, 0.14);
+
+            /* High contrast text tokens for Light mode */
+            --crm-val-spent: #4338ca;
+            --crm-val-success: #047857;
+            --crm-val-warning: #b45309;
+            --crm-val-danger: #b91c1c;
+            --crm-val-subtle: #475569;
+
+            /* Segment Badges - crisp, rich contrast in Light mode */
+            --badge-vip-bg: #fef3c7;
+            --badge-vip-text: #92400e;
+            --badge-vip-border: #fcd34d;
+
+            --badge-regular-bg: #dbeafe;
+            --badge-regular-text: #1e40af;
+            --badge-regular-border: #93c5fd;
+
+            --badge-new-bg: #d1fae5;
+            --badge-new-text: #065f46;
+            --badge-new-border: #6ee7b7;
+
+            --badge-inactive-bg: #f1f5f9;
+            --badge-inactive-text: #334155;
+            --badge-inactive-border: #cbd5e1;
+
+            --badge-risk-bg: #fee2e2;
+            --badge-risk-text: #991b1b;
+            --badge-risk-border: #fca5a5;
+
+            --badge-due-bg: #ffedd5;
+            --badge-due-text: #9a3412;
+            --badge-due-border: #fdba74;
+
+            --badge-tag-bg: #e0e7ff;
+            --badge-tag-text: #3730a3;
+            --badge-tag-border: #c7d2fe;
+
+            /* Balance Pills */
+            --balance-due-bg: #fee2e2;
+            --balance-due-text: #991b1b;
+            --balance-due-border: #fca5a5;
+
+            --balance-none-bg: #d1fae5;
+            --balance-none-text: #065f46;
+            --balance-none-border: #6ee7b7;
+
+            /* Elevation & hover */
+            --crm-card-bg: var(--bg-card);
+            --crm-card-border: var(--border-light);
+            --crm-card-hover-border: #cbd5e1;
+            --crm-stat-card-bg: var(--bg-main);
+            --table-row-hover: rgba(0, 0, 0, 0.035);
+        }
+
+        [data-theme="dark"] {
+            --crm-accent: #6366f1;
+            --crm-accent-hover: #818cf8;
+            --crm-accent-rgb: 99, 102, 241;
+            --crm-accent-bg: rgba(99, 102, 241, 0.16);
+            --crm-accent-bg-active: rgba(99, 102, 241, 0.26);
+
+            /* High contrast text tokens for Dark mode */
+            --crm-val-spent: #a5b4fc;
+            --crm-val-success: #34d399;
+            --crm-val-warning: #fbbf24;
+            --crm-val-danger: #f87171;
+            --crm-val-subtle: #cbd5e1;
+
+            /* Segment Badges - luminous, high contrast on dark backgrounds */
+            --badge-vip-bg: rgba(251, 191, 36, 0.18);
+            --badge-vip-text: #fde68a;
+            --badge-vip-border: rgba(251, 191, 36, 0.45);
+
+            --badge-regular-bg: rgba(96, 165, 250, 0.18);
+            --badge-regular-text: #bfdbfe;
+            --badge-regular-border: rgba(96, 165, 250, 0.45);
+
+            --badge-new-bg: rgba(52, 211, 153, 0.18);
+            --badge-new-text: #a7f3d0;
+            --badge-new-border: rgba(52, 211, 153, 0.45);
+
+            --badge-inactive-bg: rgba(148, 163, 184, 0.18);
+            --badge-inactive-text: #e2e8f0;
+            --badge-inactive-border: rgba(148, 163, 184, 0.35);
+
+            --badge-risk-bg: rgba(248, 113, 113, 0.22);
+            --badge-risk-text: #fecaca;
+            --badge-risk-border: rgba(248, 113, 113, 0.55);
+
+            --badge-due-bg: rgba(251, 146, 60, 0.22);
+            --badge-due-text: #fed7aa;
+            --badge-due-border: rgba(251, 146, 60, 0.48);
+
+            --badge-tag-bg: rgba(99, 102, 241, 0.22);
+            --badge-tag-text: #c7d2fe;
+            --badge-tag-border: rgba(129, 140, 248, 0.48);
+
+            /* Balance Pills */
+            --balance-due-bg: rgba(239, 68, 68, 0.22);
+            --balance-due-text: #fecaca;
+            --balance-due-border: rgba(239, 68, 68, 0.55);
+
+            --balance-none-bg: rgba(16, 185, 129, 0.2);
+            --balance-none-text: #a7f3d0;
+            --balance-none-border: rgba(16, 185, 129, 0.48);
+
+            /* Elevation & hover */
+            --crm-card-bg: #202224;
+            --crm-card-border: rgba(255, 255, 255, 0.13);
+            --crm-card-hover-border: rgba(255, 255, 255, 0.28);
+            --crm-stat-card-bg: #181a1d;
+            --table-row-hover: rgba(255, 255, 255, 0.05);
+        }
+
+        /* Top live dashboard cards */
+        .crm-dashboard-bar {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 0.85rem;
+            margin-top: 1rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .crm-live-card {
+            background: var(--crm-card-bg);
+            border: 1px solid var(--crm-card-border);
+            border-radius: 0.75rem;
+            padding: 0.85rem 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            transition: all 0.2s;
+        }
+
+        .crm-live-card:hover {
+            border-color: var(--crm-card-hover-border);
+            transform: translateY(-1px);
+        }
+
+        .crm-live-label {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            color: var(--text-muted);
+        }
+
+        .crm-live-val {
+            font-size: 1.35rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            line-height: 1.2;
+        }
+
+        /* Value color utility classes */
+        .val-spent {
+            color: var(--crm-val-spent) !important;
+        }
+
+        .val-success {
+            color: var(--crm-val-success) !important;
+        }
+
+        .val-warning {
+            color: var(--crm-val-warning) !important;
+        }
+
+        .val-danger {
+            color: var(--crm-val-danger) !important;
+        }
+
+        /* AR & CRM Layout */
+        .ar-grid {
+            display: grid;
+            grid-template-columns: 380px 1fr;
+            gap: 1.25rem;
+            margin-top: 0.85rem;
+            height: calc(100vh - 140px);
+            min-height: 520px;
+        }
+
+        .customer-panel {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            min-height: 0;
+            min-width: 0;
+            background: var(--crm-card-bg);
+            border-radius: 0.75rem;
+            border: 1px solid var(--crm-card-border);
+            padding: 1rem;
+        }
+
+        .details-panel {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            min-height: 0;
+            min-width: 0;
+            background: var(--crm-card-bg);
+            border-radius: 0.75rem;
+            border: 1px solid var(--crm-card-border);
+            padding: 1rem;
+        }
+
+        .customer-detail-header {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            align-items: center;
+            gap: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border-light);
+            padding-bottom: 0.7rem;
+            margin-bottom: 0.6rem;
+        }
+
+        .customer-detail-identity,
+        .customer-name-line,
+        .customer-contact-line,
+        .customer-tag-line,
+        .customer-detail-actions {
+            display: flex;
+            align-items: center;
+        }
+
+        .customer-detail-identity { gap: 0.55rem; min-width: 0; }
+        .customer-profile-copy { min-width: 0; }
+        .customer-name-line { gap: 0.5rem; flex-wrap: wrap; }
+        .customer-contact-line { gap: 0.75rem; flex-wrap: wrap; margin-top: 0.25rem; font-size: 0.8rem; }
+        .customer-tag-line { gap: 0.3rem; flex-wrap: wrap; margin-top: 0.35rem; }
+        .customer-detail-actions { gap: 0.35rem; flex-wrap: wrap; justify-content: flex-start; }
+        .customer-detail-actions .btn { padding: 0.32rem 0.55rem !important; font-size: 0.76rem !important; }
+
+        .customer-stat-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 0.5rem;
+        }
+
+        .customer-stat-grid .crm-stat-card {
+            padding: 0.65rem 0.75rem;
+            border-radius: 0.5rem;
+        }
+
+        .customer-stat-grid .crm-stat-card-label {
+            text-transform: none;
+            letter-spacing: 0;
+            font-weight: 600;
+        }
+
+        .customer-stat-grid .crm-stat-card-val { font-size: 1rem; }
+
+        .customer-meta-strip {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.5rem;
+            padding: 0.55rem 0.2rem;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .customer-meta-item { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+        .customer-meta-item span { color: var(--text-muted); font-size: 0.72rem; }
+        .customer-meta-item strong { color: var(--text-primary); font-size: 0.82rem; font-weight: 600; overflow-wrap: anywhere; }
+
+        #customerDetails > #tabContentHistory {
+            flex: 1 1 0;
+            min-height: 0;
+            min-width: 0;
+            overflow-y: auto;
+            overflow-x: hidden;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        #customerDetails > #tabContentHistory::-webkit-scrollbar {
+            display: none;
+        }
+
+        .customer-notes-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            padding-top: 0.15rem;
+        }
+
+        .customer-notes-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--text-secondary);
+            font-size: 0.78rem;
+            font-weight: 700;
+        }
+
+        @media (max-width: 700px) {
+            .customer-detail-header { grid-template-columns: minmax(0, 1fr); }
+            .customer-detail-actions { justify-content: flex-start; padding-left: 2.1rem; }
+            .customer-stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+
+        /* Filter Chips - High Visibility in Both Themes */
+        .crm-chips-container {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 0.35rem;
+            overflow-x: auto;
+            padding-bottom: 0.35rem;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            touch-action: pan-x;
+            overscroll-behavior-x: contain;
+        }
+
+        .crm-chips-container::-webkit-scrollbar {
+            display: none;
+        }
+
+        .crm-chip {
+            flex: 0 0 auto;
+            background: var(--bg-main);
+            border: 1px solid var(--border-light);
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.32rem 0.7rem;
+            border-radius: 2rem;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .crm-chip:hover {
+            color: var(--text-primary);
+            border-color: var(--crm-accent);
+            background: var(--crm-accent-bg);
+        }
+
+        .crm-chip.active {
+            background: var(--crm-accent) !important;
+            color: #ffffff !important;
+            border-color: var(--crm-accent) !important;
+            box-shadow: 0 2px 8px rgba(79, 70, 229, 0.35);
+        }
+
+        .crm-chip-count {
+            background: rgba(255, 255, 255, 0.25);
+            color: inherit;
+            font-size: 0.68rem;
+            padding: 1px 6px;
+            border-radius: 1rem;
+            font-weight: 700;
+        }
+
+        .crm-chip:not(.active) .crm-chip-count {
+            background: var(--border-light);
+            color: var(--text-muted);
+        }
+
+        /* Segment Badges */
+        .badge-vip {
+            background: var(--badge-vip-bg);
+            color: var(--badge-vip-text);
+            border: 1px solid var(--badge-vip-border);
+        }
+
+        .badge-regular {
+            background: var(--badge-regular-bg);
+            color: var(--badge-regular-text);
+            border: 1px solid var(--badge-regular-border);
+        }
+
+        .badge-new {
+            background: var(--badge-new-bg);
+            color: var(--badge-new-text);
+            border: 1px solid var(--badge-new-border);
+        }
+
+        .badge-inactive {
+            background: var(--badge-inactive-bg);
+            color: var(--badge-inactive-text);
+            border: 1px solid var(--badge-inactive-border);
+        }
+
+        .badge-risk {
+            background: var(--badge-risk-bg);
+            color: var(--badge-risk-text);
+            border: 1px solid var(--badge-risk-border);
+            font-weight: 700;
+        }
+
+        .badge-due {
+            background: var(--badge-due-bg);
+            color: var(--badge-due-text);
+            border: 1px solid var(--badge-due-border);
+        }
+
+        .badge-invalid-phone {
+            background: var(--badge-risk-bg);
+            color: var(--badge-risk-text);
+            border: 1px solid var(--badge-risk-border);
+            font-size: 0.68rem;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 4px;
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .customer-badge {
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 0.18rem 0.5rem;
+            border-radius: 0.35rem;
+            display: inline-flex;
+            align-items: center;
+            line-height: 1.2;
+            letter-spacing: 0.02em;
+        }
+
+        .manual-tag-pill {
+            background: var(--badge-tag-bg);
+            color: var(--badge-tag-text);
+            border: 1px solid var(--badge-tag-border);
+            font-size: 0.72rem;
+            font-weight: 600;
+            padding: 0.18rem 0.6rem;
+            border-radius: 1rem;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        /* Customer List Items */
+        .customer-item {
+            padding: 0.85rem 1rem;
+            border-radius: 0.65rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-light);
+            margin-bottom: 0.6rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .customer-item:hover {
+            border-color: var(--crm-accent);
+            background: var(--crm-accent-bg);
+        }
+
+        .customer-item.active {
+            border-color: var(--crm-accent);
+            background: var(--crm-accent-bg-active);
+            box-shadow: inset 4px 0 0 var(--crm-accent);
+        }
+
+        .customer-directory-wrap {
+            width: 100%;
+            height: auto;
+            min-height: 100%;
+            overflow-x: auto;
+            overflow-y: visible;
+            border: 1px solid var(--border-light);
+            border-radius: 0.5rem;
+        }
+
+        .customer-directory-table {
+            width: 100%;
+            min-width: 1190px;
+            table-layout: fixed;
+            border-collapse: collapse;
+            font-size: 0.72rem;
+        }
+
+        .customer-directory-table th,
+        .customer-directory-table td {
+            padding: 0.45rem 0.35rem;
+            text-align: left;
+            vertical-align: top;
+            border-bottom: 1px solid var(--border-light);
+            overflow-wrap: anywhere;
+        }
+
+        .customer-directory-table th {
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            background: var(--bg-secondary);
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            font-weight: 700;
+            white-space: normal;
+            overflow-wrap: normal;
+        }
+
+        .customer-directory-table tbody tr {
+            cursor: pointer;
+            background: var(--crm-card-bg);
+        }
+
+        .customer-directory-table tbody tr:hover,
+        .customer-directory-table tbody tr.active {
+            background: var(--crm-accent-bg-active);
+        }
+
+        .customer-directory-table tbody tr.active {
+            box-shadow: inset 3px 0 0 var(--crm-accent);
+        }
+
+        .customer-directory-table td.name-cell {
+            color: var(--text-primary);
+            font-weight: 700;
+        }
+
+        .customer-directory-table td.address-cell {
+            white-space: normal;
+            overflow-wrap: anywhere;
+        }
+
+        .customer-directory-table td.status-cell { min-width: 110px; }
+
+        #customerPanel > #customerList {
+            min-height: 0;
+            min-width: 0;
+            overflow-x: hidden;
+        }
+
+        .crm-sort-toolbar {
+            display: grid;
+            grid-template-columns: minmax(110px, 1.3fr) minmax(82px, 0.8fr) max-content 30px;
+            align-items: center;
+            gap: 0.35rem;
+            min-width: 0;
+            margin-bottom: 0.55rem;
+            white-space: nowrap;
+        }
+
+        .crm-sort-toolbar .customer-search-wrap {
+            position: relative;
+            min-width: 0;
+        }
+
+        .crm-sort-toolbar #customerSearch {
+            width: 100%;
+            min-width: 0;
+            height: 34px;
+            padding: 0.35rem 0.45rem 0.35rem 1.85rem;
+            font-size: 0.78rem;
+        }
+
+        .crm-sort-toolbar-group {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            min-width: 0;
+        }
+
+        .crm-sort-toolbar #customerSort {
+            width: 100%;
+            min-width: 0;
+            max-width: 95px;
+            padding: 0.18rem 0.35rem;
+            font-size: 0.7rem;
+            border-radius: 0.35rem;
+            height: auto;
+        }
+
+        .crm-customer-actions {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 0.5rem;
+            margin: -0.2rem 0 0.65rem;
+        }
+
+        #customerPanel > .crm-sort-toolbar { order: 1; }
+        #customerPanel > .crm-chips-container { order: 2; }
+        #customerPanel > .crm-customer-actions { order: 3; }
+        #customerPanel > #customerList { order: 4; min-height: 0; }
+
+        .balance-badge {
+            padding: 0.25rem 0.6rem;
+            border-radius: 0.35rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .balance-due {
+            background: var(--balance-due-bg);
+            color: var(--balance-due-text);
+            border: 1px solid var(--balance-due-border);
+        }
+
+        .balance-none {
+            background: var(--balance-none-bg);
+            color: var(--balance-none-text);
+            border: 1px solid var(--balance-none-border);
+        }
+
+        /* Tabs in Profile Panel */
+        .crm-tab-bar {
+            display: flex;
+            gap: 0.25rem;
+            border-bottom: 2px solid var(--border-light);
+            margin-bottom: 0.75rem;
+        }
+
+        .crm-tab-btn {
+            background: transparent;
+            border: none;
+            padding: 0.55rem 0.75rem;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+        }
+
+        .crm-tab-btn:hover {
+            color: var(--text-primary);
+        }
+
+        .crm-tab-btn.active {
+            color: var(--crm-accent) !important;
+            border-bottom-color: var(--crm-accent) !important;
+            font-weight: 700;
+        }
+
+        /* Profile Stat Cards */
+        .crm-stat-card,
+        .aging-bucket-card {
+            padding: 0.8rem 0.9rem;
+            background: var(--crm-stat-card-bg);
+            border: 1px solid var(--border-light);
+            border-radius: 0.65rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            transition: all 0.2s;
+        }
+
+        .crm-stat-card-label {
+            font-size: 0.68rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+        }
+
+        .crm-stat-card-val {
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-top: 0.15rem;
+            line-height: 1.2;
+        }
+
+        /* Tables in Tabs */
+        .crm-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        .crm-table th {
+            text-align: left;
+            padding: 0.7rem 0.85rem;
+            color: var(--text-muted);
+            font-weight: 700;
+            border-bottom: 1px solid var(--border-light);
+            background: var(--crm-stat-card-bg);
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .crm-table td {
+            padding: 0.75rem 0.85rem;
+            border-bottom: 1px solid var(--border-light);
+            color: var(--text-primary);
+        }
+
+        .crm-table tr:hover td {
+            background: var(--table-row-hover);
+        }
+
+        .mobile-back-btn {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--crm-accent);
+            padding: 0.4rem;
+            margin-right: 0.5rem;
+            cursor: pointer;
+            align-items: center;
+        }
+
+        /* Auto-save Indicator */
+        .notes-save-status {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--crm-val-success);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .notes-save-status.visible {
+            opacity: 1;
+        }
+
+        /* Dark Mode Select Options & Form Inputs */
+        [data-theme="dark"] select.form-input option,
+        [data-theme="dark"] #customerSort option {
+            background: #202224;
+            color: #ffffff;
+        }
+
+        [data-theme="dark"] .form-input:focus {
+            border-color: var(--crm-accent);
+            box-shadow: 0 0 0 2px rgba(var(--crm-accent-rgb), 0.25);
+        }
+
+        /* Responsive Layout (< 1100px) */
+        @media (max-width: 1099px) {
+            .crm-dashboard-bar {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                gap: 0.6rem;
+            }
+
+            .ar-grid {
+                grid-template-columns: 1fr;
+                height: calc(100vh - 120px);
+            }
+
+            .customer-panel.mobile-hidden {
+                display: none !important;
+            }
+
+            .details-panel.mobile-hidden {
+                display: none !important;
+            }
+
+            .mobile-back-btn {
+                display: inline-flex !important;
+            }
+        }
+
+        @media (min-width: 1100px) {
+
+            .customer-panel {
+                display: flex !important;
+            }
+
+            .mobile-back-btn {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header mobile-only">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <div class="brand-text">K Pos</div>
+                </div>
+                <button class="close-sidebar-btn" onclick="toggleSidebar()">&times;</button>
+            </div>
+
+            <div class="brand" id="sidebarBrand">K Pos</div>
+            <nav class="nav-menu">
+                <a href="index.html" class="nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                    </svg>
+                    <span>Dashboard</span>
+                </a>
+                <a href="billing.html" class="nav-link">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z">
+                        </path>
+                    </svg>
+                    <span>Billing / POS</span>
+                </a>
+                <a href="sales.html" class="nav-link">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m.599-.747C13.101 16.559 12.552 16 12 16c-1.11 0-2.08-.402-2.599-1M12 16V7">
+                        </path>
+                    </svg>
+                    <span>Sales</span>
+                </a>
+                <a href="reports.html" class="nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span>Reports</span>
+                </a>
+                <a href="purchase.html" class="nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                    </svg>
+                    <span>Purchase Invoice</span>
+                </a>
+                <a href="sales-invoice.html" class="nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
+                    </svg>
+                    <span>Sales Tax Invoice</span>
+                </a>
+                <a href="ar.html" class="nav-link active">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z">
+                        </path>
+                    </svg>
+                    <span> CRM </span>
+                </a>
+                <div class="nav-item-group">
+                    <a href="inventory.html" class="nav-link">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                        </svg>
+                        <span>Inventory</span>
+                    </a>
+                    <div class="sub-menu">
+                        <a href="inventory.html" class="nav-sub-link">List Product</a>
+                        <a href="add-product.html" class="nav-sub-link">Add Product</a>
+                        <a href="category.html" class="nav-sub-link">Category</a>
+                        <a href="barcode.html" class="nav-sub-link">Barcodes</a>
+                    </div>
+                </div>
+                <a href="payroll.html" class="nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                        <circle cx="8.5" cy="7" r="4" />
+                        <polyline points="17 11 19 13 23 9" />
+                    </svg>
+                    <span>Payroll</span>
+                </a>
+                <a href="settings.html" class="nav-link">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z">
+                        </path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                    <span>Settings</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer mobile-only">
+                <div class="shift-section">
+                    <span class="shift-label">Shift</span>
+                    <div class="shift-user">
+                        <div class="user-avatar-sm" id="sidebarAvatar">AD</div>
+                        <span class="user-name-sm" id="sidebarCashierName">Admin User</span>
+                    </div>
+                </div>
+                <div class="sidebar-copyright">
+                    <p>&copy; 2026 K Pos App</p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="top-bar">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <button class="menu-toggle mobile-only" onclick="toggleSidebar()"
+                        style="background: none; border: none; color: var(--text-primary); cursor: pointer; padding: 0.5rem; display: flex; align-items: center; justify-content: center;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </button>
+                    <div>
+                        <h1 class="logo-text" style="margin: 0; font-size: 1.25rem;">Customer CRM &amp; AR</h1>
+                        <span style="font-size: 0.75rem; color: var(--text-muted);"></span>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 1.5rem;">
+                    <div style="position: relative;" id="notificationContainer">
+                        <div style="cursor: pointer;" onclick="toggleNotificationPanel()" title="Notifications">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" style="color: var(--text-secondary);">
+                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                            </svg>
+                            <div id="notificationDot"
+                                style="display: none; position: absolute; top: -2px; right: -2px; width: 8px; height: 8px; background: #ef4444; border-radius: 50%; border: 2px solid var(--bg-secondary);">
+                            </div>
+                        </div>
+                        <div id="notificationPanel" class="notification-panel">
+                            <div class="notification-header">
+                                <span>Notifications</span>
+                                <button onclick="clearNotifications()"
+                                    style="background: none; border: none; font-size: 0.7rem; color: var(--accent-primary); cursor: pointer;">Clear
+                                    All</button>
+                            </div>
+                            <div id="notificationList" class="notification-list">
+                                <div
+                                    style="padding: 1rem; text-align: center; color: var(--text-muted); font-size: 0.8rem;">
+                                    No new notifications</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="user-profile" onclick="openCashierModal()" style="cursor: pointer;">
+                        <span id="cashierName">Admin User</span>
+                        <div class="user-avatar" id="cashierAvatar">AD</div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- AR + CRM Main Grid -->
+            <div class="ar-grid">
+                <!-- Left: Customer List Panel -->
+                <div id="customerPanel" class="customer-panel">
+                    <!-- STEP 3: Auto Segments Filter Chips -->
+                    <div class="crm-chips-container" style="margin-bottom: 0.75rem;">
+                        <button type="button" class="crm-chip active" data-filter="all" onclick="setCrmFilter('all')">
+                            <span>All</span> <span class="crm-chip-count" id="count-all">0</span>
+                        </button>
+                        <button type="button" class="crm-chip" data-filter="due" onclick="setCrmFilter('due')">
+                            <span>Due Only</span> <span class="crm-chip-count" id="count-due">0</span>
+                        </button>
+                        <button type="button" class="crm-chip" data-filter="vip" onclick="setCrmFilter('vip')">
+                            <span>VIP</span> <span class="crm-chip-count" id="count-vip">0</span>
+                        </button>
+                        <button type="button" class="crm-chip" data-filter="regular" onclick="setCrmFilter('regular')">
+                            <span>Regular</span> <span class="crm-chip-count" id="count-regular">0</span>
+                        </button>
+                        <button type="button" class="crm-chip" data-filter="new" onclick="setCrmFilter('new')">
+                            <span>New</span> <span class="crm-chip-count" id="count-new">0</span>
+                        </button>
+                        <button type="button" class="crm-chip" data-filter="inactive"
+                            onclick="setCrmFilter('inactive')">
+                            <span>Inactive</span> <span class="crm-chip-count" id="count-inactive">0</span>
+                        </button>
+                        <button type="button" class="crm-chip" data-filter="risk" onclick="setCrmFilter('risk')">
+                            <span>Credit Risk</span> <span class="crm-chip-count" id="count-risk">0</span>
+                        </button>
+                    </div>
+
+                    <!-- Search, sort and inactive filter -->
+                    <div class="crm-sort-toolbar">
+                        <div class="customer-search-wrap">
+                            <input type="text" id="customerSearch" class="form-input"
+                                placeholder="Search customers..." aria-label="Search customers">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round"
+                                style="position: absolute; left: 0.55rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none;">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                            </svg>
+                        </div>
+                        <div class="crm-sort-toolbar-group">
+                            <label for="customerSort"
+                                style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600;">Sort:</label>
+                            <select id="customerSort" class="form-input" onchange="onSortChange(this.value)"
+                                aria-label="Sort customers">
+                                <option value="lastVisit" selected>Last Visit (Recent)</option>
+                                <option value="totalSpent">Total Spent (High-Low)</option>
+                                <option value="creditDue">Credit Due (High-Low)</option>
+                                <option value="visitCount">Visit Count (High-Low)</option>
+                                <option value="name">Name (A-Z)</option>
+                            </select>
+                        </div>
+                        <div class="crm-sort-toolbar-group">
+                            <label
+                                style="font-size: 0.68rem; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; gap: 0.2rem;">
+                                <input type="checkbox" id="showDeactivatedToggle"
+                                    onchange="toggleShowDeactivated(this.checked)" style="cursor: pointer;">
+                                <span>Show Inactive</span>
+                            </label>
+                        </div>
+                        <button class="btn btn-primary" onclick="openAddCustomerModal()"
+                            style="width: 30px; height: 30px; padding: 0; justify-content: center;"
+                            title="Add New Customer" aria-label="Add New Customer">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Customer List Container -->
+                    <div id="customerList" style="flex: 1; overflow-y: auto; padding-right: 2px;">
+                        <!-- Customer rows injected here -->
+                    </div>
+                </div>
+
+                <!-- Right: Profile Panel With 3 Tabs -->
+                <div id="customerDetails" class="details-panel mobile-hidden" style="display: none;">
+                    <!-- Customer Header Row -->
+                    <div class="customer-detail-header">
+                        <div class="customer-detail-identity">
+                            <button class="mobile-back-btn" onclick="showCustomerList()" title="Back to customer list">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <line x1="19" y1="12" x2="5" y2="12"></line>
+                                    <polyline points="12 19 5 12 12 5"></polyline>
+                                </svg>
+                            </button>
+                            <div class="customer-profile-copy">
+                                <div class="customer-name-line">
+                                    <h2 id="detName"
+                                        style="margin: 0; font-size: 1.2rem; font-weight: 700; color: var(--text-primary);">
+                                        Customer Name</h2>
+                                    <span id="detDeactivatedBadge" class="customer-badge"
+                                        style="display: none; background: rgba(239, 68, 68, 0.2); color: #ef4444;">Deactivated</span>
+                                </div>
+                                <div class="customer-contact-line">
+                                    <span id="detAddress" style="color: var(--text-muted); display: none;"></span>
+                                    <span id="detPhoneDisplay"
+                                        style="color: var(--text-muted); font-weight: 500;">9800000000</span>
+                                    <span id="detPAN" style="color: var(--text-muted); display: none;"></span>
+                                    <div class="customer-detail-actions">
+                                        <a id="btnDetCall" href="#" class="btn btn-secondary btn-sm"
+                                            style="display: inline-flex; align-items: center; gap: 0.35rem; text-decoration: none;">
+                                            Call
+                                        </a>
+                                        <a id="btnDetWhatsApp" href="#" target="_blank" class="btn btn-sm"
+                                            style="display: inline-flex; align-items: center; gap: 0.35rem; background: #25D366; color: #ffffff; text-decoration: none; font-weight: 600; border: none;">
+                                            WhatsApp
+                                        </a>
+                                    </div>
+                                </div>
+                                <!-- Badges & Tags Row -->
+                                <div class="customer-tag-line">
+                                    <div id="detBadges" style="display: inline-flex; gap: 0.35rem; flex-wrap: wrap;">
+                                    </div>
+                                    <div id="detTags" style="display: inline-flex; gap: 0.35rem; flex-wrap: wrap;">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- STEP 4: Tabs Header -->
+                    <div class="crm-tab-bar">
+                        <button type="button" id="tabBtnOverview" class="crm-tab-btn active"
+                            onclick="switchCrmTab('overview')">
+                            <span>Overview</span>
+                        </button>
+                        <button type="button" id="tabBtnHistory" class="crm-tab-btn" onclick="switchCrmTab('history')">
+                            <span>Purchase History</span>
+                            <span id="tabBadgeHistoryCount"
+                                style="font-size: 0.7rem; background: var(--border-light); padding: 1px 6px; border-radius: 1rem; color: var(--text-muted);">0</span>
+                        </button>
+                        <button type="button" id="tabBtnCredit" class="crm-tab-btn" onclick="switchCrmTab('credit')">
+                            <span>Credit &amp; Payments</span>
+                            <span id="tabBadgeCreditDue"
+                                style="font-size: 0.7rem; background: var(--badge-risk-bg); color: var(--badge-risk-text); border: 1px solid var(--badge-risk-border); padding: 1px 6px; border-radius: 1rem; font-weight: 700;">Rs.
+                                0</span>
+                        </button>
+                    </div>
+
+                    <!-- TAB 1: OVERVIEW -->
+                    <div id="tabContentOverview"
+                        style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 0.65rem; padding-right: 2px;">
+                        <div class="customer-stat-grid">
+                            <div class="crm-stat-card">
+                                <span class="crm-stat-card-label">Total Spent</span>
+                                <span id="crmTotalSpent" class="crm-stat-card-val"
+                                    style="color: var(--crm-val-spent);">Rs. 0.00</span>
+                            </div>
+                            <div class="crm-stat-card">
+                                <span class="crm-stat-card-label">Visits</span>
+                                <span id="crmVisitCount" class="crm-stat-card-val">0</span>
+                            </div>
+                            <div class="crm-stat-card">
+                                <span class="crm-stat-card-label">Average Bill</span>
+                                <span id="crmAvgBill" class="crm-stat-card-val"
+                                    style="color: var(--crm-val-success);">Rs. 0.00</span>
+                            </div>
+                            <div class="crm-stat-card">
+                                <span class="crm-stat-card-label">Credit Due</span>
+                                <span id="crmCreditDue" class="crm-stat-card-val"
+                                    style="color: var(--crm-val-danger);">Rs.
+                                    0.00</span>
+                            </div>
+                        </div>
+
+                        <div class="customer-meta-strip">
+                            <div class="customer-meta-item"><span>Credit Limit</span><strong id="crmCreditLimit">No Limit</strong></div>
+                            <div class="customer-meta-item"><span>Last Visit</span><strong id="crmLastVisit">-</strong></div>
+                            <div class="customer-meta-item"><span>Customer Since</span><strong id="crmCustomerSince">-</strong></div>
+                        </div>
+
+                        <!-- Auto-saving Notes Box -->
+                        <div class="customer-notes-panel">
+                            <div class="customer-notes-title">
+                                <label for="crmNotesInput"
+                                    style="color: inherit; font: inherit;">Notes</label>
+                                <span id="crmNotesSavedIndicator" class="notes-save-status">✓ Saved</span>
+                            </div>
+                            <textarea id="crmNotesInput" class="form-input"
+                                style="height: 72px; resize: vertical; font-size: 0.85rem; line-height: 1.4;"
+                                placeholder="Add private notes, preferences, family details or delivery instructions..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- TAB 2: PURCHASE HISTORY -->
+                    <div id="tabContentHistory"
+                        style="flex: 1; overflow-y: auto; display: none; flex-direction: column; gap: 1rem; padding-right: 2px;">
+                        <!-- Date range filter -->
+                        <div
+                            style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; background: var(--bg-main); padding: 0.65rem; border-radius: 0.5rem; border: 1px solid var(--border-light);">
+                            <div style="display: flex; align-items: center; gap: 0.35rem;">
+                                <label
+                                    style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">From:</label>
+                                <input type="date" id="historyStartDate" class="form-input"
+                                    style="padding: 0.25rem 0.5rem; font-size: 0.78rem; width: auto; height: auto;">
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 0.35rem;">
+                                <label
+                                    style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">To:</label>
+                                <input type="date" id="historyEndDate" class="form-input"
+                                    style="padding: 0.25rem 0.5rem; font-size: 0.78rem; width: auto; height: auto;">
+                            </div>
+                            <button class="btn btn-primary btn-sm" onclick="applyHistoryDateFilter()"
+                                style="padding: 0.3rem 0.65rem; font-size: 0.78rem;">Filter</button>
+                            <button class="btn btn-secondary btn-sm" onclick="clearHistoryDateFilter()"
+                                style="padding: 0.3rem 0.65rem; font-size: 0.78rem;">Clear</button>
+                        </div>
+
+                        <div class="crm-history-table-wrap">
+                            <table class="crm-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Bill No</th>
+                                        <th>Payment Mode</th>
+                                        <th style="text-align: right;">Amount</th>
+                                        <th style="text-align: center;">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="historyTableBody"></tbody>
+                            </table>
+                        </div>
+                        <div class="crm-history-pagination">
+                            <span id="historyPageInfo">Page 1 of 1 (0 bills)</span>
+                            <div>
+                                <button id="btnHistPrev" class="btn btn-secondary btn-sm" onclick="prevHistoryPage()">Prev</button>
+                                <button id="btnHistNext" class="btn btn-secondary btn-sm" onclick="nextHistoryPage()">Next</button>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- TAB 3: CREDIT & PAYMENTS -->
+                    <div id="tabContentCredit"
+                        style="flex: 1; overflow-y: auto; display: none; flex-direction: column; gap: 1rem; padding-right: 2px;">
+                        <!-- Summary & Aging Buckets -->
+                        <div
+                            style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.65rem;">
+                            <div class="crm-stat-card">
+                                <span class="crm-stat-card-label">Credit Due</span>
+                                <span id="creditTabDue" class="crm-stat-card-val"
+                                    style="color: var(--crm-val-danger);">Rs.
+                                    0.00</span>
+                            </div>
+                            <div class="crm-stat-card">
+                                <span class="crm-stat-card-label">Credit Limit</span>
+                                <span id="creditTabLimit" class="crm-stat-card-val" style="font-size: 0.95rem;">No
+                                    Limit</span>
+                            </div>
+                            <div class="aging-bucket-card">
+                                <span class="crm-stat-card-label">0 - 30 Days</span>
+                                <span id="bucket0_30" class="crm-stat-card-val"
+                                    style="font-size: 1.05rem; color: var(--crm-val-success);">Rs. 0.00</span>
+                            </div>
+                            <div class="aging-bucket-card">
+                                <span class="crm-stat-card-label">31 - 60 Days</span>
+                                <span id="bucket31_60" class="crm-stat-card-val"
+                                    style="font-size: 1.05rem; color: var(--crm-val-warning);">Rs. 0.00</span>
+                            </div>
+                            <div class="aging-bucket-card">
+                                <span class="crm-stat-card-label">60+ Days</span>
+                                <span id="bucket60_plus" class="crm-stat-card-val"
+                                    style="font-size: 1.05rem; color: var(--crm-val-danger);">Rs. 0.00</span>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div style="display: flex; gap: 0.75rem;">
+                            <button id="btnOpenPayment" class="btn btn-primary" onclick="openPaymentModal()"
+                                style="flex: 1; justify-content: center; padding: 0.6rem 1rem;">
+                                💳 Record Payment
+                            </button>
+                            <button class="btn btn-secondary" onclick="exportCustomerStatement()"
+                                style="flex: 1; justify-content: center; padding: 0.6rem 1rem;">
+                                📄 Statement
+                            </button>
+                        </div>
+
+                        <!-- Ledger Table with Running Balance -->
+                        <div>
+                            <div
+                                style="font-size: 0.82rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-secondary); margin-bottom: 0.5rem;">
+                                Credit &amp; Payment Ledger
+                            </div>
+                            <div
+                                style="overflow-x: auto; border: 1px solid var(--border-light); border-radius: 0.5rem;">
+                                <table class="crm-table">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 130px;">Date</th>
+                                            <th style="width: 110px;">Ref / Bill</th>
+                                            <th>Description</th>
+                                            <th style="text-align: right; width: 110px;">Debit (+)</th>
+                                            <th style="text-align: right; width: 110px;">Credit (-)</th>
+                                            <th style="text-align: right; width: 120px;">Balance</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="ledgerTableBody">
+                                        <!-- Injected by JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Empty State When No Customer is Selected -->
+                <div id="noCustomerSelected" class="details-panel mobile-hidden"
+                    style="display: flex; align-items: center; justify-content: center; text-align: center; color: var(--text-muted); padding: 2rem;">
+                    <div>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
+                            style="opacity: 0.35; margin-bottom: 0.75rem;">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                        <h3 style="margin: 0; font-size: 1.1rem; color: var(--text-secondary);">Select a customer</h3>
+                        <p style="margin: 0.35rem 0 0; font-size: 0.85rem;">View overview stats, purchase history,
+                            ledger and record payments.</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Customer Modal (Add & Edit) -->
+    <div id="customerModal" class="modal-overlay">
+        <div class="modal" style="max-width: 480px; width: 95%;">
+            <div class="modal-header">
+                <h3 id="customerModalTitle">Add New Customer</h3>
+                <button onclick="closeCustomerModal()"
+                    style="background: none; border: none; font-size: 1.5rem; color: var(--text-muted); cursor: pointer;">&times;</button>
+            </div>
+            <div class="modal-body"
+                style="display: flex; flex-direction: column; gap: 0.85rem; max-height: 75vh; overflow-y: auto;">
+                <input type="hidden" id="custModalId">
+
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label" for="custModalName">Customer Name <span
+                            style="color:#ef4444;">*</span></label>
+                    <input type="text" id="custModalName" class="form-input" placeholder="e.g. Ramesh Shrestha"
+                        required>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label" for="custModalPhone">Phone Number (10 digits) <span
+                            style="color:#ef4444;">*</span></label>
+                    <input type="tel" id="custModalPhone" class="form-input" placeholder="e.g. 9812345678"
+                        maxlength="10" inputmode="numeric" oninput="handleModalPhoneInput(this.value)">
+                    <div id="custModalPhoneWarning"
+                        style="display: none; font-size: 0.75rem; color: #f59e0b; margin-top: 0.3rem; padding: 0.3rem 0.5rem; background: rgba(245, 158, 11, 0.1); border-radius: 0.35rem; border: 1px solid rgba(245, 158, 11, 0.3);">
+                        ⚠️ A customer with this phone number already exists (<span
+                            id="custModalPhoneExistingName"></span>)
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label class="form-label" for="custModalPAN">PAN / VAT No.</label>
+                        <input type="text" id="custModalPAN" class="form-input" placeholder="Optional (9 digits)"
+                            maxlength="9" inputmode="numeric"
+                            oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 9)">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label class="form-label" for="custModalLimit">Credit Limit (Rs.)</label>
+                        <input type="number" id="custModalLimit" class="form-input" placeholder="0 = No limit" min="0"
+                            step="100">
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label" for="custModalAddress">Address</label>
+                    <input type="text" id="custModalAddress" class="form-input" placeholder="e.g. Kathmandu, Thamel">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label" for="custModalTags">Manual Tags (comma separated)</label>
+                    <input type="text" id="custModalTags" class="form-input"
+                        placeholder="e.g. Wholesale, Staff, Neighbor">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label" for="custModalNotes">Notes (Optional)</label>
+                    <textarea id="custModalNotes" class="form-input" style="height: 65px; resize: vertical;"
+                        placeholder="Customer preferences or remarks..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeCustomerModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveCustomerFromModal()">Save Customer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Modal (Existing AR feature preserved) -->
+    <div id="paymentModal" class="modal-overlay">
+        <div class="modal" style="max-width: 400px; width: 95%;">
+            <div class="modal-header">
+                <h3>Record Payment</h3>
+                <button onclick="closePaymentModal()"
+                    style="background: none; border: none; font-size: 1.5rem; color: var(--text-muted); cursor: pointer;">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Payment Amount (Rs.)</label>
+                    <input type="number" id="payAmount" class="form-input" placeholder="0.00" step="any">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Notes (Optional)</label>
+                    <textarea id="payNotes" class="form-input" style="height: 80px;"
+                        placeholder="e.g. Cash payment, eSewa, Check #123"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closePaymentModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="submitPayment()">Confirm Payment</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Receipt Preview Modal (Used on Sales page) -->
+    <div id="receiptPreviewModal" class="modal-overlay" style="z-index: 3500;" onclick="closeReceiptPreview()">
+        <div class="modal"
+            style="max-width: 580px; width: 95%; max-height: 90vh; display: flex; flex-direction: column;"
+            onclick="event.stopPropagation()">
+            <div class="modal-header"
+                style="display: flex; justify-content: space-between; align-items: center; padding: 0.85rem 1.25rem; border-bottom: 1px solid var(--border-light);">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span style="font-size: 1.1rem;">🧾</span>
+                    <h3 id="receiptPreviewTitle" style="margin: 0; font-size: 1.05rem;">Receipt Preview</h3>
+                </div>
+                <button class="btn btn-secondary" onclick="closeReceiptPreview()"
+                    style="padding: 0.35rem 0.6rem; font-size: 0.85rem;" title="Close">&times;</button>
+            </div>
+            <div class="modal-body"
+                style="padding: 1.25rem 1rem; overflow-y: auto; background: var(--bg-main); display: flex; justify-content: center; align-items: flex-start; flex: 1;">
+                <div id="receiptPreviewPaper"
+                    style="background: #ffffff; color: #000000; box-shadow: 0 4px 15px rgba(0,0,0,0.12); border-radius: 4px; border: 1px solid #e2e8f0; width: 100%; max-width: 420px; box-sizing: border-box; overflow-x: hidden; padding: 1rem; font-family: 'Courier New', Courier, monospace;">
+                    <!-- Receipt rendered here -->
+                </div>
+            </div>
+            <div class="modal-footer"
+                style="display: flex; justify-content: flex-end; gap: 0.75rem; padding: 0.85rem 1.25rem; border-top: 1px solid var(--border-light); background: var(--bg-secondary);">
+                <button class="btn btn-secondary" onclick="closeReceiptPreview()"
+                    style="padding: 0.45rem 1rem;">Close</button>
+                <button class="btn btn-primary" onclick="printReceiptPreview()"
+                    style="padding: 0.45rem 1.25rem; display: inline-flex; align-items: center; gap: 0.45rem;">
+                    🖨️ Print Receipt
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cashier Name Modal -->
+    <div id="cashierModal" class="modal-overlay" onclick="closeCashierModal()">
+        <div class="modal" style="max-width: 400px;" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <h3 style="margin: 0;">Select Cashier</h3>
+                    <label class="theme-toggle" onclick="event.stopPropagation()">
+                        <input type="checkbox" id="themeCheckbox" onchange="toggleTheme()">
+                        <span class="theme-slider">
+                            <span class="theme-icon moon-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor">
+                                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                                </svg>
+                            </span>
+                            <span class="theme-icon sun-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor">
+                                    <circle cx="12" cy="12" r="5"></circle>
+                                    <line x1="12" y1="1" x2="12" y2="3"></line>
+                                    <line x1="12" y1="21" x2="12" y2="23"></line>
+                                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                                    <line x1="1" y1="12" x2="3" y2="12"></line>
+                                    <line x1="21" y1="12" x2="23" y2="12"></line>
+                                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                                </svg>
+                            </span>
+                        </span>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div id="cashierListContainer"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden printable area for direct receipt printing -->
+    <div id="printableArea" style="display: none;"></div>
+
+    <div id="toast"
+        style="position:fixed; bottom:2rem; right:2rem; background:#1a1a1a; color:#fff; padding:0.75rem 1.25rem; border-radius:0.5rem; font-size:0.85rem; display:none; z-index:9999; box-shadow:0 4px 16px rgba(0,0,0,0.25); transition:opacity 0.3s;">
+    </div>
+
+    <script src="js/nepali-date-converter.umd.js"></script>
+    <script src="js/nepalidate.js"></script>
+    <script src="js/theme.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/business.js"></script>
+    <script src="js/cashier.js"></script>
+    <script src="js/ar.js"></script>
+    <script src="js/notifications.js"></script>
+    <script src="js/sw-register.js"></script>
+    <script src="js/sidebar-brand.js"></script>
+    <script src="js/sidebar.js"></script>
+</body>
+
+</html>

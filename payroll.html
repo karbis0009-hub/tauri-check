@@ -1,0 +1,1682 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payroll - K Pos</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="manifest" href="manifest.json">
+    <style>
+        .payroll-grid {
+            background: var(--bg-card);
+            border-radius: 0.75rem;
+            border: 1px solid var(--border-light);
+            overflow: hidden;
+            margin-bottom: 0.5rem;
+        }
+
+        .payroll-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border-light);
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+
+        .payroll-tabs::-webkit-scrollbar {
+            display: none;
+        }
+
+        .payroll-tab-btn {
+            background: none;
+            border: none;
+            padding: 0.65rem 0.85rem;
+            color: var(--text-muted);
+            border-bottom: 2px solid transparent;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .payroll-tab-btn.active {
+            color: var(--accent-primary);
+            border-bottom-color: var(--accent-primary);
+        }
+
+        .payroll-tab-panel {
+            display: none;
+        }
+
+        .payroll-tab-panel.active {
+            display: block;
+        }
+
+        .wage-tab-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            max-width: 760px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        .wage-tab-header {
+            border-bottom: 1px solid var(--border-light);
+            padding-bottom: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .wage-tab-header h3 {
+            margin: 0;
+            font-size: 1.15rem;
+        }
+
+        .delivery-alert-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            max-width: 860px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        .delivery-alert-header {
+            border-bottom: 1px solid var(--border-light);
+            padding-bottom: 0.75rem;
+            margin-bottom: 0.9rem;
+        }
+
+        .delivery-alert-header h3 {
+            margin: 0;
+            font-size: 1.15rem;
+        }
+
+        .delivery-alert-header p {
+            margin: 0.25rem 0 0;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .delivery-alert-tabs {
+            display: flex;
+            width: fit-content;
+            border: 1px solid var(--border-light);
+            border-radius: 0.5rem;
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+
+        .delivery-alert-tab-btn {
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .delivery-alert-tab-btn.active {
+            background: rgba(var(--accent-primary-rgb), 0.12);
+            color: var(--accent-primary);
+        }
+
+        .delivery-alert-panel {
+            display: none;
+        }
+
+        .delivery-alert-panel.active {
+            display: block;
+        }
+
+        .delivery-alert-form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.75rem;
+        }
+
+        .delivery-alert-form-grid.three {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .delivery-alert-field {
+            margin-bottom: 0.75rem;
+        }
+
+        .delivery-alert-field label {
+            display: block;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 0.35rem;
+        }
+
+        .delivery-alert-field input,
+        .delivery-alert-field select {
+            width: 100%;
+            background: var(--bg-main);
+            border: 1px solid var(--border-light);
+            border-radius: 0.5rem;
+            color: var(--text-primary);
+            padding: 0.65rem 0.75rem;
+            outline: none;
+        }
+
+        .delivery-alert-date-mode {
+            display: flex;
+            width: fit-content;
+            border: 1px solid var(--border-light);
+            border-radius: 0.5rem;
+            overflow: hidden;
+            margin-bottom: 0.75rem;
+        }
+
+        .delivery-alert-date-mode button {
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            padding: 0.4rem 0.8rem;
+            cursor: pointer;
+        }
+
+        .delivery-alert-date-mode button.active {
+            background: rgba(var(--accent-primary-rgb), 0.12);
+            color: var(--accent-primary);
+        }
+
+        .delivery-alert-list-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: 0.75rem;
+            padding: 0.85rem 1rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .delivery-alert-list-item.firing {
+            border-color: #ef4444;
+            background: rgba(239, 68, 68, 0.12);
+            animation: deliveryPulse 0.8s infinite alternate;
+        }
+
+        .delivery-alert-list-item.done {
+            opacity: 0.58;
+        }
+
+        @keyframes deliveryPulse {
+            from {
+                opacity: 1;
+            }
+
+            to {
+                opacity: 0.75;
+            }
+        }
+
+        .delivery-alert-top {
+            display: flex;
+            justify-content: space-between;
+            gap: 0.75rem;
+        }
+
+        .delivery-alert-name {
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .delivery-alert-badge {
+            font-size: 0.72rem;
+            padding: 0.2rem 0.55rem;
+            border-radius: 999px;
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+
+        .delivery-alert-meta {
+            color: var(--text-secondary);
+            font-size: 0.82rem;
+            line-height: 1.6;
+            margin-top: 0.45rem;
+        }
+
+        .delivery-alert-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-top: 0.65rem;
+        }
+
+        .delivery-alarm-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.65);
+            z-index: 5000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .delivery-alarm-overlay.show {
+            display: flex;
+        }
+
+        .delivery-alarm-box {
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            width: min(420px, calc(100vw - 2rem));
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+
+            .delivery-alert-form-grid,
+            .delivery-alert-form-grid.three {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .filter-bar {
+            padding: 0.5rem 1rem;
+            border-bottom: 1px solid var(--border-light);
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            background: var(--bg-secondary);
+            flex-wrap: wrap;
+        }
+
+        .search-box {
+            position: relative;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 0.6rem 1rem 0.6rem 2.5rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--border-light);
+            background: var(--bg-main);
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+
+        .search-box svg {
+            position: absolute;
+            left: 0.85rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            width: 18px;
+            height: 18px;
+        }
+
+        .date-range-filter {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--bg-main);
+            border: 1px solid var(--border-light);
+            padding: 0.4rem 0.75rem;
+            border-radius: 0.5rem;
+        }
+
+        .date-range-filter input {
+            border: none;
+            background: transparent;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.85rem;
+            outline: none;
+        }
+
+        @media (max-width: 768px) {
+            .filter-bar {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0.75rem;
+                padding: 1rem;
+            }
+
+            .search-box {
+                max-width: none;
+                width: 100%;
+            }
+
+            .date-range-filter {
+                width: 100%;
+                justify-content: space-between;
+                padding: 0.6rem 0.75rem;
+            }
+
+            .date-range-filter input {
+                flex: 1;
+                text-align: center;
+            }
+
+            .payroll-modal-grid {
+                grid-template-columns: 1fr !important;
+                gap: 1rem !important;
+            }
+
+            #pickerCalendarContainer {
+                flex-direction: column !important;
+                gap: 1rem !important;
+            }
+
+            .cal-nav-btn {
+                padding: 0.5rem;
+            }
+
+            .modal {
+                width: 95% !important;
+                margin: 0.5rem !important;
+                padding: 1rem !important;
+            }
+
+            .modal-header h3 {
+                font-size: 1.1rem;
+            }
+
+            .content-area {
+                padding: 0.5rem 1rem !important;
+            }
+        }
+
+        .content-area {
+            padding: 0.5rem 1.5rem !important;
+        }
+
+        .table-container {
+            width: 100%;
+            overflow-x: auto;
+            background: var(--bg-secondary);
+            border-radius: 0.75rem;
+            border: 1px solid var(--border-light);
+            -webkit-overflow-scrolling: touch;
+        }
+
+        th,
+        td {
+            padding: 0.75rem 1rem !important;
+            border-bottom: 1px solid var(--border-light);
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        th {
+            background: rgba(var(--accent-primary-rgb), 0.05);
+            font-weight: 700;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* --- Nepali Calendar Styles --- */
+        .cal-cell {
+            padding: 10px 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+
+        .cal-cell:hover:not(.empty) {
+            background: var(--bg-main);
+            border-color: var(--accent-primary);
+        }
+
+        .cal-cell.range-start,
+        .cal-cell.range-end {
+            background: var(--accent-primary) !important;
+            color: var(--text-on-accent) !important;
+        }
+
+        .cal-cell.range-start *,
+        .cal-cell.range-end * {
+            background: transparent !important;
+            color: var(--text-on-accent) !important;
+            opacity: 1 !important;
+        }
+
+        .cal-cell.range-start *,
+        .cal-cell.range-end * {
+            background: transparent !important;
+            color: var(--text-on-accent) !important;
+            opacity: 1 !important;
+        }
+
+        .cal-cell.in-range {
+            background: rgba(var(--accent-primary-rgb), 0.1) !important;
+            border-radius: 0;
+            border-color: transparent;
+        }
+
+        .payroll-modal-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .cal-cell .nepali-date {
+            display: block;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .cal-cell .english-date {
+            position: absolute;
+            bottom: 4px;
+            right: 6px;
+            font-size: 0.75rem;
+            color: var(--accent-secondary);
+            font-weight: 600;
+        }
+    </style>
+    <style>
+        /* WAGE UI CSS */
+
+
+        :root {
+            --color-background-primary: var(--bg-card);
+            --color-background-secondary: var(--bg-secondary);
+            --color-border-secondary: var(--border-light);
+            --color-border-tertiary: var(--border-light);
+            --color-text-primary: var(--text-primary);
+            --color-text-secondary: var(--text-secondary);
+            --color-text-tertiary: var(--text-muted);
+            --color-text-info: var(--accent-primary);
+            --color-background-info: rgba(59, 130, 246, 0.1);
+            --color-text-success: var(--accent-success);
+            --color-text-warning: #f59e0b;
+            --color-border-warning: rgba(245, 158, 11, 0.3);
+            --color-background-warning: rgba(245, 158, 11, 0.1);
+            --color-text-danger: #ef4444;
+            --border-radius-md: 0.5rem;
+            --border-radius-lg: 0.75rem;
+        }
+
+        .field input,
+        .field select,
+        .bag-item-row input,
+        .bag-item-row select {
+            background: var(--bg-main, #1a1a1a);
+            border: 1px solid var(--border-light, #333);
+            color: var(--text-primary, #fff);
+            padding: 0.75rem 1rem;
+            border-radius: var(--border-radius-md);
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .bag-item-row input,
+        .bag-item-row select {
+            padding: 0.4rem 0.5rem;
+            border-radius: 4px;
+        }
+
+        .field input:focus,
+        .field select:focus,
+        .bag-item-row input:focus,
+        .bag-item-row select:focus {
+            border-color: var(--accent-primary, #3b82f6);
+        }
+
+
+        .wrap {
+            padding: 0.5rem 0 1rem;
+            font-family: var(--font-sans);
+        }
+
+        .app-title {
+            font-size: 18px;
+            font-weight: 500;
+            color: var(--color-text-primary);
+            margin-bottom: 3px;
+        }
+
+        .app-sub {
+            font-size: 13px;
+            color: var(--color-text-secondary);
+            margin-bottom: 1.5rem;
+        }
+
+        .mode-toggle {
+            display: flex;
+            border: 0.5px solid var(--color-border-secondary);
+            border-radius: var(--border-radius-md);
+            overflow: hidden;
+            width: fit-content;
+            margin-bottom: 0.75rem;
+        }
+
+        .mode-btn {
+            padding: 6px 16px;
+            font-size: 12px;
+            font-weight: 500;
+            border: none;
+            background: transparent;
+            color: var(--color-text-secondary);
+            cursor: pointer;
+        }
+
+        .mode-btn.active {
+            background: var(--color-background-info);
+            color: var(--color-text-info);
+        }
+
+        .card {
+            background: var(--color-background-primary);
+            border: 0.5px solid var(--color-border-tertiary);
+            border-radius: var(--border-radius-lg);
+            padding: 0.75rem 1rem;
+            margin-bottom: 8px;
+        }
+
+        .card-title {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            margin-bottom: 0.6rem;
+        }
+
+        .field {
+            margin-bottom: 8px;
+        }
+
+        .field:last-child {
+            margin-bottom: 0;
+        }
+
+        .field label {
+            display: block;
+            font-size: 12px;
+            color: var(--color-text-secondary);
+            margin-bottom: 3px;
+        }
+
+        .field input,
+        .field select {
+            width: 100%;
+            font-size: 14px;
+        }
+
+        .hint {
+            font-size: 11px;
+            color: var(--color-text-tertiary);
+            margin-top: 4px;
+        }
+
+        .two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .split-box {
+            background: var(--color-background-secondary);
+            border-radius: var(--border-radius-md);
+            padding: .8rem;
+            margin-top: 10px;
+        }
+
+        .split-box-title {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--color-text-secondary);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+        }
+
+        .metrics-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+
+        .metric {
+            background: var(--color-background-secondary);
+            border-radius: var(--border-radius-md);
+            padding: 0.5rem 0.75rem;
+        }
+
+        .metric-label {
+            font-size: 11px;
+            color: var(--color-text-secondary);
+            margin-bottom: 2px;
+        }
+
+        .metric-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--color-text-primary);
+        }
+
+        .metric-sub {
+            font-size: 11px;
+            color: var(--color-text-tertiary);
+            margin-top: 2px;
+        }
+
+        .result-card {
+            background: var(--color-background-primary);
+            border: 0.5px solid var(--color-border-tertiary);
+            border-radius: var(--border-radius-lg);
+            padding: 1.25rem;
+            margin-bottom: 12px;
+        }
+
+        .result-title {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--color-text-secondary);
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            margin-bottom: .9rem;
+        }
+
+        .rrow {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            padding: 7px 0;
+            border-bottom: 0.5px solid var(--color-border-tertiary);
+        }
+
+        .rrow:last-child {
+            border-bottom: none;
+        }
+
+        .rrow .lbl {
+            color: var(--color-text-secondary);
+        }
+
+        .rrow .val {
+            font-weight: 500;
+            color: var(--color-text-primary);
+        }
+
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            padding: 12px 0 0;
+            margin-top: 6px;
+            border-top: 0.5px solid var(--color-border-secondary);
+        }
+
+        .total-row .lbl {
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--color-text-primary);
+        }
+
+        .total-row .val {
+            font-size: 26px;
+            font-weight: 500;
+            color: var(--color-text-success);
+        }
+
+        .warn-box {
+            background: var(--color-background-warning);
+            border: 0.5px solid var(--color-border-warning);
+            border-radius: var(--border-radius-md);
+            padding: .6rem 1rem;
+            font-size: 12px;
+            color: var(--color-text-warning);
+            margin-bottom: 12px;
+            display: none;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .section-divider {
+            border: none;
+            border-top: 0.5px solid var(--color-border-tertiary);
+            margin: 14px 0;
+        }
+
+        .bag-item-row {
+            display: grid;
+            grid-template-columns: 1fr 80px 80px 80px 28px;
+            gap: 6px;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .bag-item-row input,
+        .bag-item-row select {
+            font-size: 13px;
+        }
+
+        .bag-header {
+            display: grid;
+            grid-template-columns: 1fr 80px 80px 80px 28px;
+            gap: 6px;
+            font-size: 11px;
+            color: var(--color-text-tertiary);
+            margin-bottom: 6px;
+        }
+
+        .rm-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--color-text-danger);
+            font-size: 16px;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .add-btn {
+            font-size: 13px;
+            color: var(--color-text-info);
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            margin-top: 4px;
+        }
+
+        .footer-note {
+            font-size: 11px;
+            color: var(--color-text-tertiary);
+            line-height: 1.6;
+            margin-top: .5rem;
+
+        }
+
+
+
+
+
+
+        :root {
+            --picker-surface-bg: #121212;
+            /* Rich dark background */
+            --picker-row-h: 46px;
+        }
+
+        /* Outer Panel Card Style Layout */
+        .scrolling-time-picker-card {
+            background-color: var(--picker-surface-bg);
+            border-radius: 20px;
+            width: 320px;
+            padding: 12px 0;
+            margin-top: 8px;
+            display: block;
+            font-family: sans-serif;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Interior Framework Flexbox */
+        .picker-columns-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: calc(var(--picker-row-h) * 3);
+            /* View window constraint for 3 rows */
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Scroll Columns Tracker Rules */
+        .picker-track-column {
+            flex: 1;
+            height: 100%;
+            overflow-y: scroll;
+            scroll-snap-type: y mandatory;
+            scrollbar-width: none;
+            /* Hide for Firefox */
+        }
+
+        .picker-track-column::-webkit-scrollbar {
+            display: none;
+            /* Hide for Chrome / Safari */
+        }
+
+        /* Offset margins so top and bottom elements can snap directly centered */
+        .picker-inner-strip {
+            padding: var(--picker-row-h) 0;
+        }
+
+        /* Individual Cell Structures */
+        .picker-cell {
+            height: var(--picker-row-h);
+            line-height: var(--picker-row-h);
+            text-align: center;
+            color: rgba(255, 255, 255, 0.25);
+            font-size: 20px;
+            font-weight: 500;
+            scroll-snap-align: center;
+            transition: color 0.1s ease, font-size 0.1s ease, font-weight 0.1s ease;
+            user-select: none;
+            cursor: pointer;
+        }
+
+        /* Focus Highlight Class */
+        .picker-cell.selected {
+            color: #ffffff;
+            font-size: 26px;
+            font-weight: 700;
+        }
+
+        /* Divider Track Border */
+        .picker-vertical-line {
+            width: 1px;
+            height: 70px;
+            background-color: rgba(255, 255, 255, 0.1);
+            margin: 0 8px;
+        }
+
+        /* ── Quintal-wise dual-mode rows ─────────────────────────────── */
+        .qtl-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .qtl-item-name {
+            flex: 1 1 110px;
+            min-width: 90px;
+            background: var(--color-surface-2, #1e1e2e);
+            border: 1px solid var(--color-border, #333);
+            border-radius: 6px;
+            color: var(--color-text-primary, #e0e0e0);
+            font-size: 13px;
+            padding: 5px 8px;
+            height: 32px;
+        }
+        .qtl-item-name:focus {
+            outline: none;
+            border-color: var(--color-primary, #7c6af7);
+        }
+
+        /* Mode toggle pill */
+        .qtl-mode-toggle {
+            display: flex;
+            border: 1px solid var(--color-border, #333);
+            border-radius: 6px;
+            overflow: hidden;
+            flex-shrink: 0;
+            height: 32px;
+        }
+        .qtl-mode-btn {
+            background: none;
+            border: none;
+            color: var(--color-text-tertiary, #888);
+            font-size: 11px;
+            padding: 0 9px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.15s, color 0.15s;
+            line-height: 32px;
+        }
+        .qtl-mode-btn.active {
+            background: var(--color-primary, #7c6af7);
+            color: #fff;
+        }
+        .qtl-mode-btn:not(.active):hover {
+            background: rgba(255,255,255,0.06);
+            color: var(--color-text-primary, #e0e0e0);
+        }
+
+        /* Quantity area */
+        .qtl-qty-wrap {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex-shrink: 0;
+        }
+        .qtl-bags-wrap {
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        /* Shared number input */
+        .qtl-num {
+            width: 76px;
+            background: var(--color-surface-2, #1e1e2e);
+            border: 1px solid var(--color-border, #333);
+            border-radius: 6px;
+            color: var(--color-text-primary, #e0e0e0);
+            font-size: 13px;
+            padding: 5px 6px;
+            height: 32px;
+            text-align: right;
+            -moz-appearance: textfield;
+        }
+        .qtl-num::-webkit-inner-spin-button,
+        .qtl-num::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        .qtl-num:focus {
+            outline: none;
+            border-color: var(--color-primary, #7c6af7);
+        }
+        .qtl-num.qtl-rate {
+            width: 88px;
+        }
+
+        .qtl-unit {
+            font-size: 11px;
+            color: var(--color-text-tertiary, #888);
+        }
+        .qtl-x {
+            font-size: 12px;
+            color: var(--color-text-tertiary, #888);
+            user-select: none;
+        }
+
+        /* Computed kg display under bags row */
+        .qtl-computed {
+            flex-basis: 100%;
+            font-size: 11px;
+            color: var(--color-text-secondary, #aaa);
+            padding-left: 2px;
+            margin-top: -4px;
+            margin-bottom: 2px;
+        }
+        .qtl-computed strong {
+            color: var(--color-text-primary, #e0e0e0);
+        }
+
+        /* Remove button already styled via .rm-btn */
+    </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+</head>
+
+<body>
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <!-- Mobile Sidebar Header -->
+            <div class="sidebar-header mobile-only">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <div class="brand-text">K Pos</div>
+                </div>
+                <button class="close-sidebar-btn" onclick="toggleSidebar()">&times;</button>
+            </div>
+
+            <div class="brand" id="sidebarBrand">K Pos</div>
+            <nav class="nav-menu">
+                <a href="index.html" class="nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                    </svg>
+                    <span>Dashboard</span>
+                </a>
+                <a href="billing.html" class="nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                    <span>Billing / POS</span>
+                </a>
+                <a href="sales.html" class="nav-link">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m.599-.747C13.101 16.559 12.552 16 12 16c-1.11 0-2.08-.402-2.599-1M12 16V7">
+                        </path>
+                    </svg>
+                    <span>Sales</span>
+                </a>
+                <a href="reports.html" class="nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span>Reports</span>
+                </a>
+                <a href="purchase.html" class="nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                    </svg>
+                    <span>Purchase Invoice</span>
+                </a>
+                <a href="sales-invoice.html" class="nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
+                    </svg>
+                    <span>Sales Tax Invoice</span>
+                </a>
+
+                <a href="ar.html" class="nav-link">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z">
+                        </path>
+                    </svg>
+                    <span>CRM</span>
+                </a>
+                <div class="nav-item-group">
+                    <a href="inventory.html" class="nav-link">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                        </svg>
+                        <span>Inventory</span>
+                    </a>
+                    <div class="sub-menu">
+                        <a href="inventory.html" class="nav-sub-link">List Product</a>
+                        <a href="add-product.html" class="nav-sub-link">Add Product</a>
+                        <a href="category.html" class="nav-sub-link">Category</a>
+                        <a href="barcode.html" class="nav-sub-link">Barcodes</a>
+                    </div>
+                </div>
+                <a href="payroll.html" class="nav-link active">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                        <circle cx="8.5" cy="7" r="4" />
+                        <polyline points="17 11 19 13 23 9" />
+                    </svg>
+                    <span>Payroll</span>
+                </a>
+
+                <a href="settings.html" class="nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <span>Settings</span>
+                </a>
+            </nav>
+
+            <!-- Sidebar Footer for Mobile (Shift Info) -->
+            <div class="sidebar-footer mobile-only">
+                <div class="shift-section">
+                    <span class="shift-label">Shift</span>
+                    <div class="shift-user">
+                        <div class="user-avatar-sm" id="sidebarAvatar">AD</div>
+                        <span class="user-name-sm" id="sidebarCashierName">Admin User</span>
+                    </div>
+                </div>
+                <div class="sidebar-copyright">
+                    <p>© 2026 K Pos App</p>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-bar">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <button class="menu-toggle mobile-only" onclick="toggleSidebar()"
+                        style="background: none; border: none; color: var(--text-primary); cursor: pointer; padding: 0.5rem; display: flex; align-items: center; justify-content: center;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </button>
+                    <h1 class="logo-text">K Pos</h1>
+                </div>
+                <div style="display: flex; align-items: center; gap: 1.5rem;">
+                    <!-- Notification Bell -->
+                    <div style="position: relative;" id="notificationContainer">
+                        <div style="cursor: pointer;" onclick="toggleNotificationPanel()" title="Notifications">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" style="color: var(--text-secondary);">
+                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                            </svg>
+                            <!-- Red notification dot -->
+                            <div id="notificationDot"
+                                style="display: none; position: absolute; top: -2px; right: -2px; width: 8px; height: 8px; background: #ef4444; border-radius: 50%; border: 2px solid var(--bg-secondary);">
+                            </div>
+                        </div>
+
+                        <!-- Notification Panel -->
+                        <div id="notificationPanel" class="notification-panel">
+                            <div class="notification-header">
+                                <span>Notifications</span>
+                                <button onclick="clearNotifications()"
+                                    style="background: none; border: none; font-size: 0.7rem; color: var(--accent-primary); cursor: pointer;">Clear
+                                    All</button>
+                            </div>
+                            <div id="notificationList" class="notification-list">
+                                <!-- Alerts will be injected here -->
+                                <div
+                                    style="padding: 1rem; text-align: center; color: var(--text-muted); font-size: 0.8rem;">
+                                    No new notifications</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="user-profile" onclick="openCashierModal()" style="cursor: pointer;">
+                        <span id="cashierName">Admin User</span>
+                        <div class="user-avatar" id="cashierAvatar">AD</div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="content-area">
+                <div class="payroll-tabs" id="payrollTabs">
+                    <button class="payroll-tab-btn active" id="payrollTabRecords"
+                        onclick="switchPayrollTab('records')">Payroll Records</button>
+                    <button class="payroll-tab-btn" id="payrollTabWage" onclick="switchPayrollTab('wage')">Wage
+                        Calculator</button>
+                    <button class="payroll-tab-btn" id="payrollTabDelivery"
+                        onclick="switchPayrollTab('delivery')">Delivery Alert</button>
+                </div>
+
+                <div id="payrollRecordsTab" class="payroll-tab-panel active">
+                    <div class="payroll-grid">
+                        <div class="filter-bar">
+                            <div class="search-box">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                                <input type="text" id="payrollSearch" placeholder="Quick search employee...">
+                            </div>
+                            <div class="date-range-filter" style="display: flex; align-items: center; gap: 0.5rem;">
+                                <button id="filterRangeBtn" onclick="openFilterPicker()"
+                                    style="display: flex; align-items: center; gap: 0.5rem; padding: 0.55rem 1rem; background: var(--bg-secondary); border: 1px solid var(--border-light); border-radius: 0.6rem; cursor: pointer; color: var(--text-primary); font-size: 0.875rem; white-space: nowrap; min-width: 200px;">
+                                    <svg style="width: 16px; height: 16px; flex-shrink: 0; color: var(--text-muted);"
+                                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                        <line x1="16" y1="2" x2="16" y2="6"></line>
+                                        <line x1="8" y1="2" x2="8" y2="6"></line>
+                                        <line x1="3" y1="10" x2="21" y2="10"></line>
+                                    </svg>
+                                    <span id="filterRangeLabel" style="flex: 1; text-align: left;">All Dates</span>
+                                </button>
+                                <button id="filterClearBtn" onclick="clearFilterRange()" title="Clear date filter"
+                                    style="display: none; padding: 0.55rem 0.65rem; background: var(--bg-secondary); border: 1px solid var(--border-light); border-radius: 0.6rem; cursor: pointer; color: var(--text-muted); font-size: 1rem; line-height: 1;">&times;</button>
+                                <!-- Hidden inputs still used by applyFilters() -->
+                                <input type="hidden" id="dateFilterStart">
+                                <input type="hidden" id="dateFilterEnd">
+                            </div>
+                            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                <button class="btn btn-primary" onclick="openPayrollModal()"
+                                    style="white-space: nowrap;">+
+                                    Add
+                                    Record</button>
+                            </div>
+                        </div>
+
+                        <div class="table-container">
+                            <div class="table-wrapper">
+                                <table style="width: 100%; border-collapse: collapse; min-width: 800px;">
+                                    <thead>
+                                        <tr>
+                                            <th>Employee</th>
+                                            <th>Position</th>
+                                            <th>Salary (Monthly)</th>
+                                            <th>Days Worked</th>
+                                            <th>Payment Month</th>
+                                            <th style="padding: 1rem; text-align: right;">Total</th>
+                                            <th style="padding: 1rem; text-align: center;">Status</th>
+                                            <th style="padding: 1rem; text-align: right;">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="payroll-list">
+                                        <!-- Data injected by JS -->
+                                    </tbody>
+                                    <tfoot>
+                                        <tr
+                                            style="border-top: 2px solid var(--border-light); background: var(--bg-secondary); font-weight: 700;">
+                                            <td colspan="5" style="padding: 1rem; text-align: right;">Total</td>
+                                            <td id="footerTotal" style="padding: 1rem; text-align: right;">Rs. 0.00</td>
+                                            <td colspan="2"></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add/Edit Payroll Modal -->
+    <div id="payrollModal" class="modal-overlay">
+        <div class="modal" style="max-width: 700px;">
+            <div class="modal-header">
+                <h3 id="modalTitle">Add Payroll Record</h3>
+                <button onclick="closePayrollModal()"
+                    style="background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 1.5rem;">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="payrollForm" onsubmit="event.preventDefault(); savePayrollRecord();">
+                    <div class="payroll-modal-grid" style="display: grid; gap: 1.5rem;">
+                        <div class="form-group">
+                            <label class="form-label">Employee Name</label>
+                            <input type="text" id="payEmployee" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Position</label>
+                            <input type="text" id="payPosition" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Monthly Rate (Salary)</label>
+                            <input type="number" id="paySalary" class="form-input" step="0.01"
+                                oninput="calculatePayrollTotal()">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Days Worked</label>
+                            <input type="number" id="payDays" class="form-input" placeholder="e.g. 26"
+                                oninput="calculatePayrollTotal()">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Payment Period</label>
+                            <input type="text" id="payDate" class="form-input" placeholder="Select dates..." readonly
+                                onclick="openRangePicker()" style="cursor: pointer;">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Total Amount</label>
+                            <input type="number" id="payTotal" class="form-input" step="0.01" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Status</label>
+                            <select id="payStatus" class="form-select">
+                                <option value="Paid">Paid</option>
+                                <option value="Pending">Pending</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closePayrollModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="savePayrollRecord()">Save Record</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="dateRangeModal" class="modal-overlay" style="z-index: 4000;">
+        <div class="modal" style="max-width: 1000px; padding: 0; width: 95%;">
+            <div class="modal-body" style="padding: 1.5rem; overflow-x: auto;">
+                <!-- Navigation and Dual Calendar Container -->
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+                    <button class="cal-nav-btn" onclick="changePickerMonth(-1)">&lt;</button>
+                    <div id="pickerCalendarContainer" style="display: flex; gap: 2rem; flex: 1;">
+                        <!-- Calendars Injected Here -->
+                    </div>
+                    <button class="cal-nav-btn" onclick="changePickerMonth(1)">&gt;</button>
+                </div>
+
+                <div style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center;">
+                    <button class="btn-apply" onclick="confirmDateRange()">Apply</button>
+                    <span id="rangeSelectionInfo" style="font-size: 0.9rem; color: var(--text-muted);">Select
+                        dates</span>
+                </div>
+            </div>
+            <button onclick="closeRangePicker()"
+                style="position: absolute; top: 10px; right: 10px; background: none; border: none; cursor: pointer; font-size: 1.5rem; color: var(--text-secondary);">&times;</button>
+        </div>
+    </div>
+
+    <!-- Common Modals -->
+    <div id="cashierModal" class="modal-overlay" onclick="closeCashierModal()">
+        <div class="modal" style="max-width: 400px;" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <h3 style="margin: 0;">Select Cashier</h3>
+                    <label class="theme-toggle" onclick="event.stopPropagation()">
+                        <input type="checkbox" id="themeCheckbox" onchange="toggleTheme()">
+                        <span class="theme-slider">
+                            <span class="theme-icon moon-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor">
+                                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                                </svg>
+                            </span>
+                            <span class="theme-icon sun-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor">
+                                    <circle cx="12" cy="12" r="5"></circle>
+                                    <line x1="12" y1="1" x2="12" y2="3"></line>
+                                    <line x1="12" y1="21" x2="12" y2="23"></line>
+                                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                                    <line x1="1" y1="12" x2="3" y2="12"></line>
+                                    <line x1="21" y1="12" x2="23" y2="12"></line>
+                                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                                </svg>
+                            </span>
+                        </span>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div id="cashierListContainer">
+                    <!-- List of cashiers will be injected here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Wage Calculator Tab -->
+    <div id="wageCalculatorTab" class="payroll-tab-panel">
+        <div class="wage-tab-card">
+            <div class="wage-tab-header">
+
+            </div>
+            <div class="wage-tab-body">
+                <div class="wrap">
+
+
+
+
+                    <div class="mode-toggle">
+                        <button type="button" class="mode-btn active" id="btn-bora" onclick="setMode('bora')">
+                            <i class="ti ti-package" aria-hidden="true"
+                                style="font-size:14px;vertical-align:-2px;margin-right:5px;"></i>Per-bag
+                        </button>
+                        <button type="button" class="mode-btn" id="btn-quintal" onclick="setMode('quintal')">
+                            <i class="ti ti-weight" aria-hidden="true"
+                                style="font-size:14px;vertical-align:-2px;margin-right:5px;"></i>Quintal-wise
+                        </button>
+                    </div>
+
+
+
+                    <div id="bora-section">
+                        <div class="card">
+                            <div class="card-title">Bag items </div>
+
+                            <div class="bag-header">
+                                <div>Item</div>
+                                <div>Wt (kg)</div>
+                                <div>Bags</div>
+                                <div>Rate (NPR)</div>
+                                <div></div>
+                            </div>
+                            <div id="bag-items-list"></div>
+                            <button class="add-btn" onclick="addBagItem()"><i class="ti ti-plus" aria-hidden="true"
+                                    style="font-size:13px;vertical-align:-2px;"></i> Add item</button>
+
+
+                        </div>
+                    </div>
+
+
+                    <div id="quintal-section" style="display:none;">
+                        <div class="card">
+                            <div class="card-title">Quintal items</div>
+
+                            <div class="bag-header" style="grid-template-columns: 1fr 100px 100px 28px;">
+                                <div>Item</div>
+                                <div>Total kg</div>
+                                <div>Rate/Qtl (NPR)</div>
+                                <div></div>
+                            </div>
+                            <div id="quintal-items-list"></div>
+                            <button class="add-btn" onclick="addQuintalItem()"><i class="ti ti-plus" aria-hidden="true"
+                                    style="font-size:13px;vertical-align:-2px;"></i> Add
+                                item</button>
+
+                        </div>
+                    </div>
+
+                    <div class="metrics-row">
+                        <div class="metric">
+                            <div class="metric-label">Total quintals</div>
+                            <div class="metric-value" id="m-quintal">—</div>
+                            <div class="metric-sub">@100 kg each</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Total bags</div>
+                            <div class="metric-value" id="m-bags">—</div>
+                            <div class="metric-sub">all items combined</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Base wage</div>
+                            <div class="metric-value" id="m-base">—</div>
+                            <div class="metric-sub">before surcharge</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Total payable</div>
+                            <div class="metric-value" id="m-total" style="color:var(--color-text-success);">—
+                            </div>
+                            <div class="metric-sub">final amount</div>
+                        </div>
+                    </div>
+
+                    <div class="result-card">
+                        <div class="result-title"><i class="ti ti-receipt" aria-hidden="true"
+                                style="font-size:15px;vertical-align:-2px;margin-right:5px;"></i> wage breakdown
+                        </div>
+                        <div id="breakdown-rows"></div>
+                        <div class="total-row">
+                            <span class="lbl">Total payable </span>
+                            <span class="val" id="r-total">NPR 0</span>
+
+
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Delivery Alert Tab -->
+            <div id="deliveryAlertTab" class="payroll-tab-panel">
+                <div class="delivery-alert-card">
+                    <div class="delivery-alert-header">
+
+                    </div>
+
+                    <div class="delivery-alert-tabs">
+                        <button class="delivery-alert-tab-btn active" id="deliveryAlertAddBtn"
+                            onclick="switchDeliveryAlertView('add')">New Alert</button>
+                        <button class="delivery-alert-tab-btn" id="deliveryAlertListBtn"
+                            onclick="switchDeliveryAlertView('list')">All Alerts <span
+                                id="deliveryPendingCount"></span></button>
+                    </div>
+
+                    <div id="deliveryAlertAddPanel" class="delivery-alert-panel active">
+                        <div class="delivery-alert-form-grid">
+                            <div class="delivery-alert-field">
+                                <label>Customer name</label>
+                                <input type="text" id="deliveryCustomerName" placeholder="e.g. Ram Bahadur">
+                            </div>
+                            <div class="delivery-alert-field">
+                                <label>Phone</label>
+                                <input type="text" id="deliveryCustomerPhone" placeholder="98XXXXXXXX">
+                            </div>
+                            <div class="delivery-alert-field">
+                                <label>Item</label>
+                                <input type="text" id="deliveryItemName" placeholder="e.g. Rice 50kg">
+                            </div>
+                            <div class="delivery-alert-field">
+                                <label>Amount paid (NPR)</label>
+                                <input type="number" id="deliveryAmountPaid" placeholder="0" min="0">
+                            </div>
+                        </div>
+
+                        <div class="delivery-alert-field">
+                            <label>Delivery area / address</label>
+                            <input type="text" id="deliveryArea" placeholder="e.g. Balaju, Kathmandu">
+                        </div>
+
+                        <div class="delivery-alert-date-mode">
+                            <button class="active" id="deliveryDateModeAd"
+                                onclick="setDeliveryDateMode('AD')">AD</button>
+                            <button id="deliveryDateModeBs" onclick="setDeliveryDateMode('BS')">BS</button>
+                        </div>
+
+                        <div id="deliveryAdInputs" class="delivery-alert-form-grid three">
+                            <div class="delivery-alert-field">
+                                <label>Year</label>
+                                <input type="number" id="deliveryAdYear" min="2020" max="2100">
+                            </div>
+                            <div class="delivery-alert-field">
+                                <label>Month</label>
+                                <select id="deliveryAdMonth">
+                                    <option value="1">January</option>
+                                    <option value="2">February</option>
+                                    <option value="3">March</option>
+                                    <option value="4">April</option>
+                                    <option value="5">May</option>
+                                    <option value="6">June</option>
+                                    <option value="7">July</option>
+                                    <option value="8">August</option>
+                                    <option value="9">September</option>
+                                    <option value="10">October</option>
+                                    <option value="11">November</option>
+                                    <option value="12">December</option>
+                                </select>
+                            </div>
+                            <div class="delivery-alert-field">
+                                <label>Day</label>
+                                <input type="number" id="deliveryAdDay" min="1" max="31">
+                            </div>
+                        </div>
+
+                        <div id="deliveryBsInputs" class="delivery-alert-form-grid three" style="display:none;">
+                            <div class="delivery-alert-field">
+                                <label>BS Year</label>
+                                <input type="number" id="deliveryBsYear" min="2070" max="2200">
+                            </div>
+                            <div class="delivery-alert-field">
+                                <label>BS Month</label>
+                                <select id="deliveryBsMonth">
+                                    <option value="1">Baisakh</option>
+                                    <option value="2">Jestha</option>
+                                    <option value="3">Ashadh</option>
+                                    <option value="4">Shrawan</option>
+                                    <option value="5">Bhadra</option>
+                                    <option value="6">Ashwin</option>
+                                    <option value="7">Kartik</option>
+                                    <option value="8">Mangsir</option>
+                                    <option value="9">Poush</option>
+                                    <option value="10">Magh</option>
+                                    <option value="11">Falgun</option>
+                                    <option value="12">Chaitra</option>
+                                </select>
+                            </div>
+                            <div class="delivery-alert-field">
+                                <label>BS Day</label>
+                                <input type="number" id="deliveryBsDay" min="1" max="32">
+                            </div>
+                        </div>
+
+
+
+
+
+                        <div id="deliveryDateHint"
+                            style="color: var(--text-muted); font-size: 0.78rem; margin: -0.25rem 0 0.75rem;"></div>
+
+                        <div class="delivery-alert-form-grid">
+                            <div class="delivery-alert-field">
+                                <label>Time</label>
+
+                                <!-- Hidden input to pass data to backend form processing -->
+                                <input type="hidden" id="deliveryAlertTime" value="04:02">
+
+                                <!-- The Scrollable System UI Wheel Container Box -->
+                                <div class="scrolling-time-picker-card" id="singleTimerContainer">
+                                    <div class="picker-columns-wrapper">
+
+                                        <!-- Period Column (AM/PM) -->
+                                        <div class="picker-track-column ampm-track">
+                                            <div class="picker-inner-strip">
+                                                <div class="picker-cell">AM</div>
+                                                <div class="picker-cell">PM</div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Hours Column (01-12) -->
+                                        <div class="picker-track-column hours-track">
+                                            <div class="picker-inner-strip">
+                                                <!-- Populated automatically by JavaScript -->
+                                            </div>
+                                        </div>
+
+                                        <!-- Vertical Accent Separator -->
+                                        <div class="picker-vertical-line"></div>
+
+                                        <!-- Minutes Column (00-59) -->
+                                        <div class="picker-track-column minutes-track">
+                                            <div class="picker-inner-strip">
+                                                <!-- Populated automatically by JavaScript -->
+                                            </div>
+                                        </div>
+
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+
+
+
+
+
+
+                        <div class="delivery-alert-field">
+                            <label>Note</label>
+                            <input type="text" id="deliveryAlertNote" placeholder="Optional note">
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" onclick="addDeliveryAlert()"
+                        style="width: 100%; justify-content: center;">Set Delivery Alert</button>
+
+                </div>
+
+                <div id="deliveryAlertListPanel" class="delivery-alert-panel">
+                    <div class="metrics-row" id="deliveryAlertMetrics"></div>
+                    <div id="deliveryAlertsList"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="delivery-alarm-overlay" id="deliveryAlarmOverlay">
+            <div class="delivery-alarm-box">
+                <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">!</div>
+                <h3 style="margin: 0 0 0.5rem; color: #ef4444;">Delivery Alert</h3>
+                <div id="deliveryAlarmCustomer" style="font-weight: 700; margin-bottom: 0.35rem;"></div>
+                <div id="deliveryAlarmDetail"
+                    style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 1rem;">
+                </div>
+                <button class="btn btn-danger" onclick="dismissDeliveryAlarm()"
+                    style="width: 100%; justify-content: center;">Stop Alarm & Dismiss</button>
+            </div>
+        </div>
+
+        <script src="js/nepali-date-converter.umd.js"></script>
+        <script src="js/nepalidate.js"></script>
+        <script src="js/theme.js"></script>
+        <script src="js/api.js"></script>
+        <script src="js/business.js"></script>
+        <script src="js/cashier.js"></script>
+        <script src="js/notifications.js"></script>
+        <script src="js/sidebar-brand.js"></script>
+        <script src="js/sidebar.js"></script>
+        <script src="js/payroll.js"></script>
+        <script src="js/business-calculator.js"></script>
+        <div>
+
+
+
+</body>
+
+</html>

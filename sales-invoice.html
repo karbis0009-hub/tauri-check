@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Tax Invoice - K Pos</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="manifest" href="manifest.json">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid var(--border-light);
+            padding-bottom: 0px;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            padding: 0.75rem 1rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .tab-btn.active {
+            color: var(--accent-secondary);
+            border-bottom-color: var(--accent-secondary);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Form styling */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 0.75rem 1rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .form-group label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .form-control {
+            background: var(--bg-main);
+            border: 1px solid var(--border-light);
+            border-radius: 0.4rem;
+            padding: 0.4rem 0.6rem;
+            color: var(--text-primary);
+            font-family: var(--font-main);
+            font-size: 0.85rem;
+            width: 100%;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--accent-secondary);
+            box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+        }
+
+        .form-control:disabled {
+            opacity: 0.75;
+            cursor: not-allowed;
+            background: rgba(var(--accent-primary-rgb), 0.05);
+        }
+
+        /* Quick Item Bar */
+        .quick-add-bar {
+            display: flex;
+            gap: 0.75rem;
+            align-items: flex-end;
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            box-shadow: var(--shadow-sm);
+            flex-wrap: wrap;
+        }
+
+        .quick-add-bar .form-group {
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .quick-add-bar .form-group.small {
+            flex: 0 0 80px;
+            min-width: 80px;
+        }
+
+        .quick-add-bar .form-group.medium {
+            flex: 0 0 120px;
+            min-width: 120px;
+        }
+
+        /* Grid Table Styling */
+        .sales-grid-container {
+            width: 100%;
+            overflow-x: auto;
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: 0.75rem;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 1rem;
+        }
+
+        .sales-grid {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+            min-width: 1200px;
+        }
+
+        .sales-grid th {
+            background: rgba(var(--accent-primary-rgb), 0.03);
+            border-bottom: 2px solid var(--border-light);
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-size: 0.7rem;
+            letter-spacing: 0.05em;
+            padding: 0.5rem;
+            text-align: left;
+        }
+
+        .sales-grid td {
+            border-bottom: 1px solid var(--border-light);
+            padding: 0.25rem 0.4rem;
+            vertical-align: middle;
+        }
+
+        .sales-grid input,
+        .sales-grid select {
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: 0.25rem;
+            padding: 0.25rem;
+            color: var(--text-primary);
+            font-size: 0.8rem;
+            width: 100%;
+            transition: all 0.15s;
+        }
+
+        .sales-grid input:hover,
+        .sales-grid select:hover {
+            border-color: var(--border-light);
+            background: var(--bg-main);
+        }
+
+        .sales-grid input:focus,
+        .sales-grid select:focus {
+            border-color: var(--accent-secondary);
+            background: var(--bg-secondary);
+            outline: none;
+        }
+
+        .sales-grid input[readonly] {
+            background: transparent !important;
+            border-color: transparent !important;
+            cursor: not-allowed;
+            font-weight: 500;
+        }
+
+        .btn-icon {
+            background: none;
+            border: none;
+            color: var(--accent-danger);
+            cursor: pointer;
+            padding: 0.25rem;
+            border-radius: 0.25rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s;
+        }
+
+        .btn-icon:hover {
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .grid-actions {
+            padding: 0.5rem 1rem;
+            background: rgba(var(--accent-primary-rgb), 0.01);
+            border-top: 1px solid var(--border-light);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* Autocomplete Suggestions */
+        .autocomplete-wrapper {
+            position: relative;
+        }
+
+        .autocomplete-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-light);
+            border-radius: 0.4rem;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 100;
+            box-shadow: var(--shadow-lg);
+            margin-top: 2px;
+        }
+
+        .suggestion-item {
+            padding: 0.5rem 0.75rem;
+            cursor: pointer;
+            font-size: 0.85rem;
+            display: flex;
+            justify-content: space-between;
+            color: var(--text-primary);
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+
+        .suggestion-item:hover,
+        .suggestion-item.active {
+            background: rgba(139, 92, 246, 0.1);
+            color: var(--accent-secondary);
+        }
+
+        .suggestion-item .stock {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header mobile-only">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <div class="brand-text">K Pos</div>
+                </div>
+                <button class="close-sidebar-btn" onclick="toggleSidebar()">&times;</button>
+            </div>
+
+            <div class="brand" id="sidebarBrand">K Pos</div>
+            <nav class="nav-menu">
+                <a href="index.html" class="nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                    </svg>
+                    <span>Dashboard</span>
+                </a>
+                <a href="billing.html" class="nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                    <span>Billing / POS</span>
+                </a>
+                <a href="sales.html" class="nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m.599-.747C13.101 16.559 12.552 16 12 16c-1.11 0-2.08-.402-2.599-1M12 16V7" />
+                    </svg>
+                    <span>Sales</span>
+                </a>
+                <a href="reports.html" class="nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span>Reports</span>
+                </a>
+
+                <a href="purchase.html" class="nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                    </svg>
+                    <span>Purchase Invoice</span>
+                </a>
+                <a href="sales-invoice.html" class="nav-link active">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
+                    </svg>
+                    <span>Sales Tax Invoice</span>
+                </a>
+
+                <a href="ar.html" class="nav-link">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z">
+                        </path>
+                    </svg>
+                    <span>CRM</span>
+                </a>
+                <div class="nav-item-group">
+                    <a href="inventory.html" class="nav-link">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                        </svg>
+                        <span>Inventory</span>
+                    </a>
+                    <div class="sub-menu">
+                        <a href="inventory.html" class="nav-sub-link">List Product</a>
+                        <a href="add-product.html" class="nav-sub-link">Add Product</a>
+                        <a href="category.html" class="nav-sub-link">Category</a>
+                        <a href="barcode.html" class="nav-sub-link">Barcodes</a>
+                    </div>
+                </div>
+                <a href="payroll.html" class="nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                        <circle cx="8.5" cy="7" r="4" />
+                        <polyline points="17 11 19 13 23 9" />
+                    </svg>
+                    <span>Payroll</span>
+                </a>
+
+                <a href="settings.html" class="nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <span>Settings</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content" style="flex: 1;">
+            <!-- Header/Top Bar -->
+            <header class="top-bar no-print"
+                style="display: flex; align-items: center; justify-content: space-between; padding: 0 1.5rem; background: var(--bg-secondary); border-bottom: 1px solid var(--border-light); height: var(--header-height);">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <button class="mobile-menu-btn mobile-only" onclick="toggleSidebar()"
+                        style="background: none; border: none; cursor: pointer; color: var(--text-primary); font-size: 1.5rem;">&#9776;</button>
+                    <h2 id="pageStoreName" style="margin: 0; font-size: 1.25rem; font-weight: 700;">Sales Tax Invoice
+                    </h2>
+                </div>
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <button class="btn btn-secondary" onclick="openCashierModal()">
+                        <span id="activeCashierName">Select Cashier</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Inner Layout -->
+            <div class="content-area" style="padding: 1.5rem;">
+                <!-- Tabs -->
+                <div class="tabs no-print">
+                    <button class="tab-btn active" id="tabEntry" onclick="switchTab('entry')">New Sales Tax
+                        Invoice</button>
+                    <button class="tab-btn" id="tabHistory" onclick="switchTab('history')">Sales Invoice
+                        History</button>
+                </div>
+
+                <!-- Tab 1: Entry Form -->
+                <div id="entryTabContent" class="tab-content active">
+                    <!-- Top Form Section -->
+                    <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 1.5rem; margin-bottom: 1rem;">
+                        <!-- Left Details Card (Bill Info) -->
+                        <div class="form-grid"
+                            style="grid-template-columns: 1fr; margin-bottom: 0; align-content: start;">
+                            <div class="form-group">
+                                <label>Bill No.</label>
+                                <input type="text" id="siNo" class="form-control" disabled>
+                            </div>
+                            <div class="form-group">
+                                <label>Date</label>
+                                <div style="display: flex; gap: 0.5rem;">
+                                    <input type="date" id="entryDateAD" class="form-control" style="flex: 1;">
+                                    <input type="text" id="entryDateBS" class="form-control" style="flex: 1;"
+                                        placeholder="YYYY-MM-DD" readonly>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Warehouse</label>
+                                <select id="godown" class="form-control">
+                                    <option value="Main Warehouse">Main Warehouse</option>
+                                    <option value="Secondary Store">Secondary Store</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Right Customer Details Card -->
+                        <div class="form-grid"
+                            style="grid-template-columns: 1fr 1fr; margin-bottom: 0; align-content: start; gap: 0.75rem 1rem;">
+                            <div class="form-group autocomplete-wrapper" style="grid-column: span 2;">
+                                <label>Customer</label>
+                                <input type="text" id="customer" class="form-control"
+                                    placeholder="Type customer name..." autocomplete="off">
+                                <div id="customerSuggestions" class="autocomplete-suggestions" style="display: none;">
+                                </div>
+                            </div>
+                            <div class="form-group" style="grid-column: span 2;">
+                                <label>Address</label>
+                                <input type="text" id="address" class="form-control" placeholder="Address">
+                            </div>
+                            <div class="form-group" style="grid-column: span 2;">
+                                <label>Vat No.</label>
+                                <input type="text" id="vatNo" class="form-control" placeholder="Vat/PAN No (9 digits)"
+                                    maxlength="9" inputmode="numeric"
+                                    oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 9)">
+                            </div>
+                            <div class="form-group" style="grid-column: span 2;">
+                                <label>Remarks</label>
+                                <input type="text" id="remarks" class="form-control" placeholder="Enter remarks...">
+                            </div>
+                            <div class="form-group">
+                                <label>Flat Dis (%)</label>
+                                <input type="number" id="flatDisPct" class="form-control" value="0.00" min="0" max="100"
+                                    step="any" oninput="calculateTotals()">
+                            </div>
+                            <div class="form-group">
+                                <label>Flat Dis (Rs.)</label>
+                                <input type="number" id="flatDisAmt" class="form-control" value="0.00" min="0"
+                                    step="any" oninput="calculateTotals()">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Add Product Bar -->
+                    <div class="quick-add-bar">
+                        <div class="form-group medium">
+                            <label>Barcode</label>
+                            <input type="text" id="itemBarcode" class="form-control" placeholder="Scan barcode..."
+                                onkeydown="handleBarcodeScan(event)">
+                        </div>
+                        <div class="form-group autocomplete-wrapper" style="flex: 2;">
+                            <label>Description</label>
+                            <input type="text" id="itemName" class="form-control" placeholder="Search item by name..."
+                                autocomplete="off">
+                            <div id="itemSuggestions" class="autocomplete-suggestions" style="display: none;"></div>
+                        </div>
+                        <div class="form-group small">
+                            <label>Stock</label>
+                            <input type="text" id="itemStock" class="form-control" disabled value="0">
+                        </div>
+                        <div class="form-group small">
+                            <label>Qty</label>
+                            <input type="number" id="itemQty" class="form-control" value="1" min="1" step="any">
+                        </div>
+                        <div class="form-group medium">
+                            <label>Rate</label>
+                            <input type="number" id="itemRate" class="form-control" value="0.00" min="0" step="any">
+                        </div>
+                        <button class="btn btn-primary" onclick="quickAddItem()" style="padding: 0.45rem 1.25rem;">Add
+                            Item</button>
+                    </div>
+
+                    <!-- Sales Grid Table -->
+                    <div class="sales-grid-container">
+                        <table class="sales-grid">
+                            <thead>
+                                <tr>
+                                    <th style="width: 40px;">S.No.</th>
+                                    <th style="width: 120px;">Barcode</th>
+                                    <th style="width: 300px;">Description</th>
+                                    <th style="width: 80px;">Unit</th>
+                                    <th style="width: 80px;">Quantity</th>
+                                    <th style="width: 100px;">Rate</th>
+                                    <th style="width: 100px;">Amt</th>
+                                    <th style="width: 80px;">Ind. Disc</th>
+                                    <th style="width: 100px;">Total Disc</th>
+                                    <th style="width: 80px;">VAT</th>
+                                    <th style="width: 100px;">Net Amt</th>
+                                    <th style="width: 120px;">Exp Date</th>
+                                    <th style="width: 50px; text-align: center;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="salesGridBody">
+                                <!-- Row template will be inserted dynamically -->
+                            </tbody>
+                        </table>
+                        <div class="grid-actions">
+                            <button class="btn btn-secondary" onclick="addNewGridRow()">+ Add Blank Row</button>
+                            <span id="gridRowsCount"
+                                style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500;">0 items in
+                                list</span>
+                        </div>
+                    </div>
+
+                    <!-- Bottom Summary Area -->
+
+                    <!-- Horizontal totals bar like reference image -->
+                    <div
+                        style="background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 0.75rem; padding: 0.5rem 1rem; margin-bottom: 0.75rem; box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 0; flex-wrap: wrap; font-size: 0.78rem;">
+                        <div
+                            style="display: flex; align-items: center; gap: 0.4rem; padding: 0.25rem 1rem 0.25rem 0; border-right: 1px solid var(--border-light); margin-right: 1rem; white-space: nowrap;">
+                            <span
+                                style="color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em;">TOTAL
+                                QTY:</span>
+                            <span id="totalQty" style="font-weight: 700; color: var(--text-primary);">0.000</span>
+                        </div>
+                        <div
+                            style="display: flex; align-items: center; gap: 0.4rem; padding: 0.25rem 1rem 0.25rem 0; border-right: 1px solid var(--border-light); margin-right: 1rem; white-space: nowrap;">
+                            <span
+                                style="color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em;">GROSS:</span>
+                            <span id="grossTotal" style="font-weight: 700; color: var(--text-primary);">0.00</span>
+                        </div>
+                        <div
+                            style="display: flex; align-items: center; gap: 0.4rem; padding: 0.25rem 1rem 0.25rem 0; border-right: 1px solid var(--border-light); margin-right: 1rem; white-space: nowrap;">
+                            <span
+                                style="color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em;">DISCOUNT:</span>
+                            <span id="totalDiscount" style="font-weight: 700; color: var(--text-primary);">0.00</span>
+                        </div>
+                        <div
+                            style="display: flex; align-items: center; gap: 0.4rem; padding: 0.25rem 1rem 0.25rem 0; border-right: 1px solid var(--border-light); margin-right: 1rem; white-space: nowrap;">
+                            <span
+                                style="color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em;">TAXABLE:</span>
+                            <span id="taxableAmount" style="font-weight: 700; color: var(--text-primary);">0.00</span>
+                        </div>
+                        <div
+                            style="display: flex; align-items: center; gap: 0.4rem; padding: 0.25rem 1rem 0.25rem 0; border-right: 1px solid var(--border-light); margin-right: 1rem; white-space: nowrap;">
+                            <span
+                                style="color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em;">NON
+                                TAXABLE:</span>
+                            <span id="nonTaxableAmount"
+                                style="font-weight: 700; color: var(--text-primary);">0.00</span>
+                        </div>
+                        <div
+                            style="display: flex; align-items: center; gap: 0.4rem; padding: 0.25rem 1rem 0.25rem 0; border-right: 1px solid var(--border-light); margin-right: 1rem; white-space: nowrap;">
+                            <span
+                                style="color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em;">VAT:</span>
+                            <span id="vatTotal" style="font-weight: 700; color: var(--text-primary);">0.00</span>
+                        </div>
+                        <div
+                            style="display: flex; align-items: center; gap: 0.4rem; padding: 0.25rem 0; white-space: nowrap; margin-left: auto;">
+                            <span
+                                style="color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; font-size: 0.82rem;">NET
+                                AMNT:</span>
+                            <span id="netAmount"
+                                style="font-weight: 800; color: var(--accent-success); font-size: 0.95rem;">0.00</span>
+                        </div>
+                    </div>
+
+                    <!-- Action buttons -->
+                    <div style="display: flex; gap: 0.75rem;">
+                        <button class="btn btn-secondary" onclick="resetForm()"
+                            style="padding: 0.6rem 1.25rem;">Reset</button>
+                        <button class="btn btn-primary" onclick="saveSalesInvoice()"
+                            style="flex: 1; padding: 0.6rem; font-size: 0.95rem; font-weight: 600; display: flex; justify-content: center; align-items: center; gap: 0.5rem;">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor" style="width: 1.1rem; height: 1.1rem;">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                            </svg>
+                            <span>Save Sales Tax Invoice</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tab 2: Invoice History -->
+                <div id="historyTabContent" class="tab-content">
+                    <div class="filter-bar"
+                        style="background: var(--bg-card); padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--border-light); margin-bottom: 1rem; display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end;">
+                        <div class="form-group" style="min-width: 150px;">
+                            <label>Start Date</label>
+                            <input type="date" id="historyStartDate" class="form-control">
+                        </div>
+                        <div class="form-group" style="min-width: 150px;">
+                            <label>End Date</label>
+                            <input type="date" id="historyEndDate" class="form-control">
+                        </div>
+                        <div class="form-group" style="flex: 1; min-width: 200px;">
+                            <label>Search Customer or SI No</label>
+                            <input type="text" id="historySearch" class="form-control" placeholder="Search...">
+                        </div>
+                        <button class="btn btn-primary" onclick="loadSalesInvoiceHistory()"
+                            style="padding: 0.45rem 1.5rem;">Filter</button>
+                    </div>
+
+                    <div class="table-container"
+                        style="background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 0.75rem;">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr>
+                                    <th style="padding: 0.75rem 1rem;">SI Number</th>
+                                    <th style="padding: 0.75rem 1rem;">Entry Date</th>
+                                    <th style="padding: 0.75rem 1rem;">Invoice Ref #</th>
+                                    <th style="padding: 0.75rem 1rem;">Customer</th>
+                                    <th style="padding: 0.75rem 1rem; text-align: center;">Total Items</th>
+                                    <th style="padding: 0.75rem 1rem; text-align: right;">Net Amount</th>
+                                    <th style="padding: 0.75rem 1rem; text-align: center;">Payment</th>
+                                    <th style="padding: 0.75rem 1rem; text-align: center;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyTbody">
+                                <tr>
+                                    <td colspan="8"
+                                        style="text-align: center; padding: 2rem; color: var(--text-muted);">No records
+                                        found.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Cashier Name Modal (Standard) -->
+    <div id="cashierModal" class="modal-overlay" onclick="closeCashierModal()">
+        <div class="modal" style="max-width: 400px;" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <h3 style="margin: 0;">Select Cashier</h3>
+                    <label class="theme-toggle" onclick="event.stopPropagation()">
+                        <input type="checkbox" id="themeCheckbox" onchange="toggleTheme()">
+                        <span class="theme-slider">
+                            <span class="theme-icon moon-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor">
+                                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                                </svg>
+                            </span>
+                            <span class="theme-icon sun-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor">
+                                    <circle cx="12" cy="12" r="5"></circle>
+                                    <line x1="12" y1="1" x2="12" y2="3"></line>
+                                    <line x1="12" y1="21" x2="12" y2="23"></line>
+                                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                                    <line x1="1" y1="12" x2="3" y2="12"></line>
+                                    <line x1="21" y1="12" x2="23" y2="12"></line>
+                                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                                </svg>
+                            </span>
+                        </span>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div id="cashierListContainer"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sales Invoice Detail Modal -->
+    <div id="invoiceDetailModal" class="modal-overlay" onclick="closeDetailModal()">
+        <div class="modal" style="max-width: 900px;" onclick="event.stopPropagation()">
+            <div class="modal-header" style="border-bottom: 1px solid var(--border-light); padding-bottom: 1rem;">
+                <h3 id="modalTitle" style="margin: 0;">Sales Tax Invoice Details</h3>
+                <button onclick="closeDetailModal()"
+                    style="background: none; border: none; cursor: pointer; font-size: 1.5rem; color: var(--text-secondary);">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 1.5rem;">
+                <!-- Header details -->
+                <div
+                    style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem; font-size: 0.85rem; line-height: 1.5;">
+                    <div><strong>SI No:</strong> <span id="detailSiNo">-</span></div>
+                    <div><strong>Entry Date (AD):</strong> <span id="detailEntryDateAD">-</span></div>
+                    <div><strong>Entry Date (BS):</strong> <span id="detailEntryDateBS">-</span></div>
+                    <div><strong>Invoice No:</strong> <span id="detailInvoiceNo">-</span></div>
+                    <div><strong>Invoice Date (AD):</strong> <span id="detailInvoiceDateAD">-</span></div>
+                    <div><strong>Invoice Date (BS):</strong> <span id="detailInvoiceDateBS">-</span></div>
+                    <div><strong>Customer:</strong> <span id="detailCustomer">-</span></div>
+                    <div><strong>Vat/PAN:</strong> <span id="detailVatNo">-</span></div>
+                    <div><strong>Payment Terms:</strong> <span id="detailPaymentTerms">-</span></div>
+                </div>
+
+                <!-- Items list -->
+                <div class="table-container" style="margin-bottom: 1.5rem; max-height: 300px; overflow-y: auto;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                        <thead>
+                            <tr>
+                                <th style="padding: 0.5rem;">S.No.</th>
+                                <th style="padding: 0.5rem;">Barcode</th>
+                                <th style="padding: 0.5rem;">Description</th>
+                                <th style="padding: 0.5rem; text-align: center;">Qty</th>
+                                <th style="padding: 0.5rem; text-align: right;">Rate</th>
+                                <th style="padding: 0.5rem; text-align: right;">Discount</th>
+                                <th style="padding: 0.5rem; text-align: right;">VAT</th>
+                                <th style="padding: 0.5rem; text-align: right;">Net Amt</th>
+                            </tr>
+                        </thead>
+                        <tbody id="detailItemsBody">
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Summary calculations -->
+                <div
+                    style="display: flex; justify-content: space-between; border-top: 1px solid var(--border-light); padding-top: 1rem;">
+                    <div style="flex: 1;">
+                        <strong>Remarks:</strong>
+                        <p id="detailRemarks"
+                            style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;">-</p>
+                    </div>
+                    <div style="width: 250px; display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.85rem;">
+                        <div style="display: flex; justify-content: space-between;"><span>Gross Total:</span> <span
+                                id="detailGross">-</span></div>
+                        <div style="display: flex; justify-content: space-between;"><span>Discount:</span> <span
+                                id="detailDiscount">-</span></div>
+                        <div style="display: flex; justify-content: space-between;"><span>Taxable:</span> <span
+                                id="detailTaxable">-</span></div>
+                        <div style="display: flex; justify-content: space-between;"><span>Non-Taxable:</span> <span
+                                id="detailNonTaxable">-</span></div>
+                        <div style="display: flex; justify-content: space-between;"><span>VAT:</span> <span
+                                id="detailVat">-</span></div>
+                        <div
+                            style="display: flex; justify-content: space-between; font-weight: 700; border-top: 1px solid var(--border-light); padding-top: 0.25rem; font-size: 1rem;">
+                            <span>Net Amount:</span> <span id="detailNet">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer"
+                style="display: flex; justify-content: flex-end; gap: 0.5rem; border-top: 1px solid var(--border-light); padding-top: 1rem;">
+                <button class="btn btn-secondary" onclick="printInvoiceDetail()">Print Invoice</button>
+                <button class="btn btn-primary" onclick="closeDetailModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/theme.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/business.js"></script>
+    <script src="js/cashier.js"></script>
+    <script src="js/nepali-date-converter.umd.js"></script>
+    <script src="js/nepalidate.js"></script>
+    <script src="js/notifications.js"></script>
+    <script src="js/sidebar-brand.js"></script>
+    <script src="js/sidebar.js"></script>
+    <script src="js/sales-invoice.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,5 @@
+node_modules
+server/node_modules
+pos_database.db
+server/pos_database.db
+.git

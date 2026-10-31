@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - K Pos</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Dancing+Script:wght@700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="manifest" href="manifest.json">
+    <style>
+        .settings-layout {
+            display: flex;
+            gap: 1.5rem;
+            align-items: start;
+            justify-content: space-between;
+        }
+
+        .settings-tab-btn {
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-secondary);
+            font-family: var(--font-main);
+            font-weight: 600;
+            padding: 0.6rem 1.25rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .settings-tab-btn:hover {
+            color: var(--text-primary);
+            background: rgba(var(--accent-primary-rgb), 0.05);
+        }
+
+        .settings-tab-btn.active {
+            color: var(--text-on-accent, #ffffff);
+            background: var(--accent-primary, #333333);
+            border-color: var(--accent-primary, #333333);
+        }
+
+        [data-theme="dark"] .settings-tab-btn.active {
+            color: #111315;
+            background: #ffffff;
+            border-color: #ffffff;
+        }
+
+        .content-area {
+            padding: 0.5rem 1.5rem !important;
+        }
+
+        @media (max-width: 1100px) {
+            .settings-layout {
+                flex-direction: column;
+                gap: 1.5rem;
+            }
+
+            .settings-layout .card {
+                max-width: 100% !important;
+            }
+
+            .settings-layout>div:last-child {
+                position: static !important;
+                width: 100% !important;
+                max-width: 400px;
+                margin: 0 auto;
+            }
+        }
+
+        /* Stepper +/- controls matching both Dark and Light themes */
+        .number-stepper {
+            display: inline-flex;
+            align-items: stretch;
+            border: 1px solid var(--border-light);
+            border-radius: 0.5rem;
+            background: var(--bg-main);
+            overflow: hidden;
+            height: 38px;
+            box-sizing: border-box;
+            width: 100%;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .number-stepper:focus-within {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 2px rgba(var(--accent-primary-rgb), 0.2);
+        }
+
+        .stepper-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            min-width: 28px;
+            height: 100%;
+            background: rgba(var(--accent-primary-rgb), 0.05);
+            border: none;
+            color: var(--text-primary);
+            font-size: 1.05rem;
+            font-weight: 700;
+            cursor: pointer;
+            user-select: none;
+            transition: background-color 0.15s ease, color 0.15s ease, opacity 0.1s ease;
+            padding: 0;
+            line-height: 1;
+            border-right: 1px solid var(--border-light);
+        }
+
+        .stepper-btn.stepper-plus {
+            border-right: none;
+            border-left: 1px solid var(--border-light);
+        }
+
+        .stepper-btn:hover {
+            background: var(--accent-primary);
+            color: var(--text-on-accent);
+        }
+
+        .stepper-btn:active {
+            opacity: 0.85;
+            transform: scale(0.94);
+        }
+
+        .number-stepper input[type="number"] {
+            flex: 1;
+            min-width: 0;
+            width: 100%;
+            height: 100%;
+            border: none !important;
+            background: transparent !important;
+            text-align: center;
+            padding: 0 4px !important;
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            -moz-appearance: textfield;
+            outline: none !important;
+            box-shadow: none !important;
+        }
+
+        .number-stepper input[type="number"]::placeholder {
+            color: var(--text-muted);
+            opacity: 0.8;
+        }
+
+        .number-stepper input[type="number"]::-webkit-outer-spin-button,
+        .number-stepper input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        /* Dark Mode overrides for Steppers and Form Selects */
+        [data-theme="dark"] .stepper-btn {
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text-primary);
+            border-color: var(--border-light);
+        }
+
+        [data-theme="dark"] .stepper-btn:hover {
+            background: var(--text-primary);
+            color: #111315;
+        }
+
+        [data-theme="dark"] select.form-input option {
+            background: var(--bg-card);
+            color: var(--text-primary);
+        }
+
+        /* Auto-save Status Indicator */
+        .form-label::after {
+            content: "";
+            display: table;
+            clear: both;
+        }
+
+        .save-status-indicator {
+            float: right;
+            font-size: 0.78rem;
+            font-weight: 600;
+            transition: opacity 0.3s ease;
+            user-select: none;
+            letter-spacing: normal;
+        }
+
+        .save-status-indicator.success {
+            color: var(--accent-success, #10b981);
+        }
+
+        .save-status-indicator.error {
+            color: var(--accent-danger, #ef4444);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <!-- Mobile Sidebar Header -->
+            <div class="sidebar-header mobile-only">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <div class="brand-text">K Pos</div>
+                </div>
+                <button class="close-sidebar-btn" onclick="toggleSidebar()">&times;</button>
+            </div>
+
+            <div class="brand" id="sidebarBrand">K Pos</div>
+            <nav class="nav-menu">
+                <a href="index.html" class="nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                    </svg>
+                    <span>Dashboard</span>
+                </a>
+                <a href="billing.html" class="nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                    <span>Billing / POS</span>
+                </a>
+                <a href="sales.html" class="nav-link">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m.599-.747C13.101 16.559 12.552 16 12 16c-1.11 0-2.08-.402-2.599-1M12 16V7">
+                        </path>
+                    </svg>
+                    <span>Sales</span>
+                </a>
+                <a href="reports.html" class="nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span>Reports</span>
+                </a>
+                <a href="purchase.html" class="nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                    </svg>
+                    <span>Purchase Invoice</span>
+                </a>
+                <a href="sales-invoice.html" class="nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
+                    </svg>
+                    <span>Sales Tax Invoice</span>
+                </a>
+                <a href="ar.html" class="nav-link">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z">
+                        </path>
+                    </svg>
+                    <span>CRM</span>
+                </a>
+                <div class="nav-item-group">
+                    <a href="inventory.html" class="nav-link">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                        </svg>
+                        <span>Inventory</span>
+                    </a>
+                    <div class="sub-menu">
+                        <a href="inventory.html" class="nav-sub-link">List Product</a>
+                        <a href="add-product.html" class="nav-sub-link">Add Product</a>
+                        <a href="category.html" class="nav-sub-link">Category</a>
+                        <a href="barcode.html" class="nav-sub-link">Barcodes</a>
+                    </div>
+                </div>
+                <a href="payroll.html" class="nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                        <circle cx="8.5" cy="7" r="4" />
+                        <polyline points="17 11 19 13 23 9" />
+                    </svg>
+                    <span>Payroll</span>
+                </a>
+
+                <a href="settings.html" class="nav-link active">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <span>Settings</span>
+                </a>
+            </nav>
+
+            <!-- Sidebar Footer for Mobile (Shift Info) -->
+            <div class="sidebar-footer mobile-only">
+                <div class="shift-section">
+                    <span class="shift-label">Shift</span>
+                    <div class="shift-user">
+                        <div class="user-avatar-sm" id="sidebarAvatar">AD</div>
+                        <span class="user-name-sm" id="sidebarCashierName">Admin User</span>
+                    </div>
+                </div>
+                <div class="sidebar-copyright">
+                    <p>© 2026 K Pos App</p>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-bar">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <button class="menu-toggle mobile-only" onclick="toggleSidebar()"
+                        style="background: none; border: none; color: var(--text-primary); cursor: pointer; padding: 0.5rem; display: flex; align-items: center; justify-content: center;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </button>
+                    <h1 class="logo-text">K Pos</h1>
+                </div>
+                <div style="display: flex; align-items: center; gap: 1.5rem;">
+                    <!-- Notification Bell -->
+                    <div style="position: relative;" id="notificationContainer">
+                        <div style="cursor: pointer;" onclick="toggleNotificationPanel()" title="Notifications">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" style="color: var(--text-secondary);">
+                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                            </svg>
+                            <!-- Red notification dot -->
+                            <div id="notificationDot"
+                                style="display: none; position: absolute; top: -2px; right: -2px; width: 8px; height: 8px; background: #ef4444; border-radius: 50%; border: 2px solid var(--bg-secondary);">
+                            </div>
+                        </div>
+
+                        <!-- Notification Panel -->
+                        <div id="notificationPanel" class="notification-panel">
+                            <div class="notification-header">
+                                <span>Notifications</span>
+                                <button onclick="clearNotifications()"
+                                    style="background: none; border: none; font-size: 0.7rem; color: var(--accent-primary); cursor: pointer;">Clear
+                                    All</button>
+                            </div>
+                            <div id="notificationList" class="notification-list">
+                                <!-- Alerts will be injected here -->
+                                <div
+                                    style="padding: 1rem; text-align: center; color: var(--text-muted); font-size: 0.8rem;">
+                                    No new notifications</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="user-profile" onclick="openCashierModal()" style="cursor: pointer;">
+                        <span id="cashierName">Admin User</span>
+                        <div class="user-avatar" id="cashierAvatar">AD</div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="content-area">
+                <!-- Settings Tabs Bar -->
+                <div class="settings-tabs"
+                    style="display: flex; gap: 0.5rem; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-light); padding-bottom: 0.5rem;">
+                    <button type="button" id="tabBtnGeneral" class="settings-tab-btn active"
+                        onclick="switchSettingsTab('general')">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path
+                                d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+                            </path>
+                        </svg>
+                        Store Settings
+                    </button>
+                    <button type="button" id="tabBtnBusinesses" class="settings-tab-btn"
+                        onclick="switchSettingsTab('businesses')">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 21h18"></path>
+                            <path d="M5 21V7l8-4v18"></path>
+                            <path d="M19 21V11l-6-4"></path>
+                            <path d="M9 9h1"></path>
+                            <path d="M9 13h1"></path>
+                            <path d="M9 17h1"></path>
+                        </svg>
+                        Manage Businesses
+                    </button>
+                </div>
+
+                <!-- Tab 1: Store Settings Content -->
+                <div id="settingsTabGeneral" class="settings-tab-content">
+                    <div class="settings-layout">
+                        <!-- Settings Form -->
+                        <div class="card" style="max-width: 650px; width: 100%;">
+                            <div class="form-group">
+                                <label class="form-label">Store Name</label>
+                                <div style="display: grid; grid-template-columns: minmax(0, 1fr) 110px; gap: 0.5rem;">
+                                    <input type="text" id="storeName" class="form-input"
+                                        placeholder="e.g. My Awesome Shop" oninput="updatePreview()">
+                                    <div class="number-stepper"><button type="button" class="stepper-btn stepper-minus"
+                                            tabindex="-1">−</button><input type="number" id="storeNameFontSize"
+                                            class="form-input" min="4" max="46" step="0.5" placeholder="px"
+                                            title="Store name size in px" aria-label="Store name size in px"
+                                            oninput="updatePreview()"><button type="button"
+                                            class="stepper-btn stepper-plus" tabindex="-1">+</button></div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Address Line 1</label>
+                                <div style="display: grid; grid-template-columns: minmax(0, 1fr) 110px; gap: 0.5rem;">
+                                    <input type="text" id="storeAddress" class="form-input"
+                                        placeholder="e.g. 123 Market St" oninput="updatePreview()">
+                                    <div class="number-stepper"><button type="button" class="stepper-btn stepper-minus"
+                                            tabindex="-1">−</button><input type="number" id="addressFontSize"
+                                            class="form-input" min="7" max="24" step="0.5" placeholder="px"
+                                            title="Address size in px" aria-label="Address size in px"
+                                            oninput="updatePreview()"><button type="button"
+                                            class="stepper-btn stepper-plus" tabindex="-1">+</button></div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Phone Number</label>
+                                <div style="display: grid; grid-template-columns: minmax(0, 1fr) 110px; gap: 0.5rem;">
+                                    <input type="text" id="storePhone" class="form-input" placeholder="e.g. 9841234567"
+                                        oninput="updatePreview()">
+                                    <div class="number-stepper"><button type="button" class="stepper-btn stepper-minus"
+                                            tabindex="-1">−</button><input type="number" id="phoneFontSize"
+                                            class="form-input" min="7" max="24" step="0.5" placeholder="px"
+                                            title="Phone number size in px" aria-label="Phone number size in px"
+                                            oninput="updatePreview()"><button type="button"
+                                            class="stepper-btn stepper-plus" tabindex="-1">+</button></div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" style="font-weight: 700;">Business Registration</label>
+                                <div
+                                    style="display: flex; gap: 1.5rem; margin-top: 0.35rem; padding: 0.5rem 0.75rem; background: var(--bg-main, #f3f4f6); border-radius: 0.5rem; border: 1px solid var(--border-light, #e5e7eb);">
+                                    <label
+                                        style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer; font-size: 0.9rem; font-weight: 600; color: var(--text-primary); margin: 0;">
+                                        <input type="radio" name="businessType" id="bizTypePan" value="pan_only"
+                                            onchange="onBusinessTypeChange(); updatePreview();"
+                                            style="cursor: pointer; width: 16px; height: 16px; accent-color: var(--accent-primary);">
+                                        PAN Only (Not VAT Registered)
+                                    </label>
+                                    <label
+                                        style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer; font-size: 0.9rem; font-weight: 600; color: var(--text-primary); margin: 0;">
+                                        <input type="radio" name="businessType" id="bizTypeVat" value="vat_registered"
+                                            checked onchange="onBusinessTypeChange(); updatePreview();"
+                                            style="cursor: pointer; width: 16px; height: 16px; accent-color: var(--accent-primary);">
+                                        VAT Registered
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- VAT Group (shown when VAT Registered is selected) -->
+                            <div class="form-group" id="panVatGroup">
+                                <label class="form-label" id="panVatLabel">VAT Number</label>
+                                <div style="display: grid; grid-template-columns: minmax(0, 1fr) 110px; gap: 0.5rem;"
+                                    id="panVatInputRow">
+                                    <input type="text" id="storeVat" class="form-input" maxlength="9"
+                                        placeholder="Enter VAT Number"
+                                        oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 9); updatePreview()">
+                                    <div class="number-stepper"><button type="button" class="stepper-btn stepper-minus"
+                                            tabindex="-1">−</button><input type="number" id="vatFontSize"
+                                            class="form-input" min="7" max="24" step="0.5" placeholder="px"
+                                            title="VAT number size in px" aria-label="VAT number size in px"
+                                            oninput="updatePreview()"><button type="button"
+                                            class="stepper-btn stepper-plus" tabindex="-1">+</button></div>
+                                </div>
+                            </div>
+
+                            <!-- PAN Group (shown when PAN Only is selected) -->
+                            <div class="form-group" id="panOnlyGroup" style="display: none;">
+                                <label class="form-label">PAN Number</label>
+                                <div style="display: grid; grid-template-columns: minmax(0, 1fr) 110px; gap: 0.5rem;">
+                                    <input type="text" id="storePan" class="form-input" maxlength="9"
+                                        placeholder="Enter PAN Number"
+                                        oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 9); updatePreview()">
+                                    <div class="number-stepper"><button type="button" class="stepper-btn stepper-minus"
+                                            tabindex="-1">−</button><input type="number" id="panOnlyFontSize"
+                                            class="form-input" min="7" max="24" step="0.5" placeholder="px"
+                                            title="PAN size in px" aria-label="PAN size in px"
+                                            oninput="const vEl = document.getElementById('vatFontSize'); if (vEl) vEl.value = this.value; updatePreview();"><button
+                                            type="button" class="stepper-btn stepper-plus" tabindex="-1">+</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- VAT Invoice Titles Group (shown when VAT Registered is selected) -->
+                            <div class="form-group" id="vatInvoiceTitleGroup">
+                                <label class="form-label">Abbreviated &amp; Tax Invoice Titles</label>
+                                <div
+                                    style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 110px; gap: 0.5rem;">
+                                    <input type="text" id="abbreviatedTaxInvoiceLabel" class="form-input"
+                                        placeholder="ABBREVIATED TAX INVOICE" oninput="updatePreview()">
+                                    <input type="text" id="taxInvoiceLabel" class="form-input" placeholder="TAX INVOICE"
+                                        oninput="updatePreview()">
+                                    <div class="number-stepper"><button type="button" class="stepper-btn stepper-minus"
+                                            tabindex="-1">−</button><input type="number"
+                                            id="abbreviatedTaxInvoiceFontSize" class="form-input" min="7" max="24"
+                                            step="0.5" placeholder="px" title="Invoice title size in px"
+                                            aria-label="Invoice title size in px" oninput="updatePreview()"><button
+                                            type="button" class="stepper-btn stepper-plus" tabindex="-1">+</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- PAN Bill Title Group (shown when PAN Only is selected) -->
+                            <div class="form-group" id="panBillTitleGroup" style="display: none;">
+                                <label class="form-label">Bill Title</label>
+                                <div style="display: grid; grid-template-columns: minmax(0, 1fr) 110px; gap: 0.5rem;">
+                                    <input type="text" id="panBillLabel" class="form-input" placeholder="BILL"
+                                        oninput="updatePreview()">
+                                    <div class="number-stepper"><button type="button" class="stepper-btn stepper-minus"
+                                            tabindex="-1">−</button><input type="number" id="panBillFontSize"
+                                            class="form-input" min="7" max="24" step="0.5" placeholder="px"
+                                            title="Bill title size in px" aria-label="Bill title size in px"
+                                            oninput="const vEl = document.getElementById('abbreviatedTaxInvoiceFontSize'); if (vEl) vEl.value = this.value; updatePreview();"><button
+                                            type="button" class="stepper-btn stepper-plus" tabindex="-1">+</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">In Words</label>
+                                <div style="display: grid; grid-template-columns: minmax(0, 1fr) 110px; gap: 0.5rem;">
+                                    <input type="text" id="wordsLabel" class="form-input" placeholder="In Words"
+                                        oninput="updatePreview()">
+                                    <div class="number-stepper"><button type="button" class="stepper-btn stepper-minus"
+                                            tabindex="-1">−</button><input type="number" id="wordsFontSize"
+                                            class="form-input" min="7" max="24" step="0.5" placeholder="px"
+                                            title="In words size in px" aria-label="In words size in px"
+                                            oninput="updatePreview()"><button type="button"
+                                            class="stepper-btn stepper-plus" tabindex="-1">+</button></div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Receipt Footer Message</label>
+                                <div
+                                    style="display: grid; grid-template-columns: minmax(0, 1fr) 110px; gap: 0.5rem; align-items: start;">
+                                    <textarea id="footerText" class="form-input"
+                                        style="height: 80px; padding: 0.75rem; resize: vertical;"
+                                        placeholder="Thank you for visiting!" oninput="updatePreview()"></textarea>
+                                    <div class="number-stepper"><button type="button" class="stepper-btn stepper-minus"
+                                            tabindex="-1">−</button><input type="number" id="footerFontSize"
+                                            class="form-input" min="7" max="24" step="0.5" placeholder="px"
+                                            title="Footer message size in px" aria-label="Footer message size in px"
+                                            oninput="updatePreview()"><button type="button"
+                                            class="stepper-btn stepper-plus" tabindex="-1">+</button></div>
+                                </div>
+                            </div>
+
+                            <hr style="border: 0; border-top: 1px solid var(--border-light); margin: 1rem 0;">
+
+                            <h3 id="invoiceFormatHeading"
+                                style="font-size: 1.1rem; margin-bottom: 0.75rem; color: var(--accent-primary);">Invoice
+                                Format</h3>
+
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                <div class="form-group">
+                                    <label class="form-label">Base Font Size (px)</label>
+                                    <div class="number-stepper"><button type="button" class="stepper-btn stepper-minus"
+                                            tabindex="-1">−</button><input type="number" id="baseFontSize"
+                                            class="form-input" value="10" min="8" max="16"
+                                            oninput="updatePreview()"><button type="button"
+                                            class="stepper-btn stepper-plus" tabindex="-1">+</button></div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Header Font Size (px)</label>
+                                    <div class="number-stepper"><button type="button" class="stepper-btn stepper-minus"
+                                            tabindex="-1">−</button><input type="number" id="headerFontSize"
+                                            class="form-input" value="16" min="10" max="24"><button type="button"
+                                            class="stepper-btn stepper-plus" tabindex="-1">+</button></div>
+                                </div>
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                <div class="form-group">
+                                    <label class="form-label">Line Height</label>
+                                    <div class="number-stepper"><button type="button" class="stepper-btn stepper-minus"
+                                            tabindex="-1">−</button><input type="number" id="lineHeight"
+                                            class="form-input" value="1.4" step="0.1" min="1" max="2"
+                                            oninput="updatePreview()"><button type="button"
+                                            class="stepper-btn stepper-plus" tabindex="-1">+</button></div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Paper Width (mm)</label>
+                                    <div class="number-stepper"><button type="button" class="stepper-btn stepper-minus"
+                                            tabindex="-1">−</button><input type="number" id="paperWidth"
+                                            class="form-input" value="58" min="40" max="100"
+                                            oninput="updatePreview()"><button type="button"
+                                            class="stepper-btn stepper-plus" tabindex="-1">+</button></div>
+                                </div>
+                            </div>
+
+                            <hr style="border: 0; border-top: 1px solid var(--border-light); margin: 1rem 0;">
+
+                            <h3 style="font-size: 1.1rem; margin-bottom: 0.75rem; color: var(--accent-primary);">Bill
+                                Numbering</h3>
+
+                            <div class="form-group">
+                                <label class="form-label">Fiscal Year (NP)</label>
+                                <input type="text" id="fiscalYear" class="form-input" placeholder="e.g. 082/83"
+                                    value="082/83">
+                            </div>
+
+                            <div class="form-group" style="display:none;">
+                                <label class="form-label">Numbering Format</label>
+                                <select id="billFormat" class="form-input">
+
+                                    <option value="prefix">Prefix-Based - e.g. 100-TH</option>
+
+                                </select>
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                <div class="form-group">
+                                    <label class="form-label">Bill Prefix</label>
+                                    <input type="text" id="billPrefix" class="form-input" placeholder="e.g. TH"
+                                        value="TH">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Starting Number</label>
+                                    <div class="number-stepper"><button type="button" class="stepper-btn stepper-minus"
+                                            tabindex="-1">−</button><input type="number" id="startingBillNo"
+                                            class="form-input" value="1" min="1"><button type="button"
+                                            class="stepper-btn stepper-plus" tabindex="-1">+</button></div>
+                                </div>
+                            </div>
+
+                            <hr style="border: 0; border-top: 1px solid var(--border-light); margin: 1rem 0;">
+
+                            <h3 style="font-size: 1.1rem; margin-bottom: 0.75rem; color:var(--accent-primary);">
+                                Receipt Table Headers</h3>
+
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                <div class="form-group">
+                                    <label class="form-label">Sn Label</label>
+                                    <div
+                                        style="display: grid; grid-template-columns: minmax(0, 1fr) 110px; gap: 0.5rem;">
+                                        <input type="text" id="snLabel" class="form-input" placeholder="Sn"
+                                            oninput="updatePreview()">
+                                        <div class="number-stepper"><button type="button"
+                                                class="stepper-btn stepper-minus" tabindex="-1">−</button><input
+                                                type="number" id="snFontSize" class="form-input" min="7" max="24"
+                                                step="0.5" placeholder="px" title="SN header size in px"
+                                                aria-label="SN header size in px" oninput="updatePreview()"><button
+                                                type="button" class="stepper-btn stepper-plus" tabindex="-1">+</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Particulars Label</label>
+                                    <div
+                                        style="display: grid; grid-template-columns: minmax(0, 1fr) 110px; gap: 0.5rem;">
+                                        <input type="text" id="particularsLabel" class="form-input"
+                                            placeholder="Particulars" oninput="updatePreview()">
+                                        <div class="number-stepper"><button type="button"
+                                                class="stepper-btn stepper-minus" tabindex="-1">−</button><input
+                                                type="number" id="particularsFontSize" class="form-input" min="7"
+                                                max="24" step="0.5" placeholder="px"
+                                                title="Particulars header size in px"
+                                                aria-label="Particulars header size in px"
+                                                oninput="updatePreview()"><button type="button"
+                                                class="stepper-btn stepper-plus" tabindex="-1">+</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+                                <div class="form-group">
+                                    <label class="form-label">Qty Label</label>
+                                    <div
+                                        style="display: grid; grid-template-columns: minmax(0, 1fr) 110px; gap: 0.5rem;">
+                                        <input type="text" id="qtyLabel" class="form-input" placeholder="Qty"
+                                            oninput="updatePreview()">
+                                        <div class="number-stepper"><button type="button"
+                                                class="stepper-btn stepper-minus" tabindex="-1">−</button><input
+                                                type="number" id="qtyFontSize" class="form-input" min="7" max="24"
+                                                step="0.5" placeholder="px" title="Quantity header size in px"
+                                                aria-label="Quantity header size in px"
+                                                oninput="updatePreview()"><button type="button"
+                                                class="stepper-btn stepper-plus" tabindex="-1">+</button></div>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Rate Label</label>
+                                    <div
+                                        style="display: grid; grid-template-columns: minmax(0, 1fr) 110px; gap: 0.5rem;">
+                                        <input type="text" id="rateLabel" class="form-input" placeholder="Rate"
+                                            oninput="updatePreview()">
+                                        <div class="number-stepper"><button type="button"
+                                                class="stepper-btn stepper-minus" tabindex="-1">−</button><input
+                                                type="number" id="rateFontSize" class="form-input" min="7" max="24"
+                                                step="0.5" placeholder="px" title="Rate header size in px"
+                                                aria-label="Rate header size in px" oninput="updatePreview()"><button
+                                                type="button" class="stepper-btn stepper-plus" tabindex="-1">+</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Amt Label</label>
+                                    <div
+                                        style="display: grid; grid-template-columns: minmax(0, 1fr) 110px; gap: 0.5rem;">
+                                        <input type="text" id="amtLabel" class="form-input" placeholder="Amt"
+                                            oninput="updatePreview()">
+                                        <div class="number-stepper"><button type="button"
+                                                class="stepper-btn stepper-minus" tabindex="-1">−</button><input
+                                                type="number" id="amtFontSize" class="form-input" min="7" max="24"
+                                                step="0.5" placeholder="px" title="Amount header size in px"
+                                                aria-label="Amount header size in px" oninput="updatePreview()"><button
+                                                type="button" class="stepper-btn stepper-plus" tabindex="-1">+</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <hr style="border: 0; border-top: 1px solid var(--border-light); margin: 1rem 0;">
+
+                            <h3 style="font-size: 1.1rem; margin-bottom: 0.75rem; color: var(--accent-primary);">Data
+                                Management & Backup</h3>
+                            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+                                Export your data to back it up or move it between different folders.
+                                Import will restore all sales, products, and settings from a JSON backup file.
+                            </p>
+
+                            <div
+                                style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                                <button onclick="exportData()" class="btn btn-secondary"
+                                    style="background: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-light); display: flex; align-items: center; justify-content: center; gap: 0.5rem; height: 38px;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                        <polyline points="7 10 12 15 17 10"></polyline>
+                                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                                    </svg>
+                                    Export Backup
+                                </button>
+
+                                <button onclick="document.getElementById('importFile').click()"
+                                    class="btn btn-secondary"
+                                    style="background: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-light); display: flex; align-items: center; justify-content: center; gap: 0.5rem; height: 38px;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                        <polyline points="17 8 12 3 7 8"></polyline>
+                                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                                    </svg>
+                                    Import Backup
+                                </button>
+                                <input type="file" id="importFile" hidden accept=".json" onchange="importData(event)">
+                            </div>
+
+                            <hr style="border: 0; border-top: 1px solid var(--border-light); margin: 1rem 0;">
+
+                            <h3 style="font-size: 1.1rem; margin-bottom: 0.75rem; color: var(--accent-primary);">Payment
+                                QR
+                                Codes</h3>
+                            <div class="form-group">
+                                <label class="form-label"></label>
+                                <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0.25rem 0 0.75rem;">
+
+                                <div id="qrGrid"
+                                    style="display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 0.5rem;">
+
+                                    <!-- QR thumbnails rendered by JS -->
+                                </div>
+                                <div style="margin-top: 0.75rem;">
+                                    <input type="file" id="qrFileInput" accept="image/*" style="display: none;"
+                                        onchange="handleQRUpload(event)">
+                                    <button class="btn btn-secondary"
+                                        onclick="document.getElementById('qrFileInput').click()" style="width: auto;">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round"
+                                            style="margin-right: 0.4rem;">
+                                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                                        </svg>
+                                        Add QR Image
+                                    </button>
+                                </div>
+                            </div>
+
+
+                        </div>
+
+                        <!-- Live Preview -->
+                        <div style="position: sticky; top: 1rem; flex: 1; min-width: 320px; max-width: 450px;">
+                            <h3
+                                style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                                Live Receipt Preview</h3>
+                            <div id="receiptPreview"
+                                style="container-type: inline-size; background: white; color: black; padding: 15px; box-shadow: var(--shadow-lg); font-family: 'Courier New', monospace; min-height: 400px; border-radius: 4px; overflow-x: auto; word-wrap: break-word; word-break: break-all; overflow-wrap: break-word;">
+                                <!-- Preview Content will be injected by JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 2: Manage Businesses Content -->
+                <div id="settingsTabBusinesses" class="settings-tab-content" style="display: none;">
+                    <div class="card" style="max-width: 850px; width: 100%;">
+                        <div
+                            style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem; border-bottom: 1px solid var(--border-light); padding-bottom: 1rem;">
+                            <div>
+                                <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin: 0;">
+                                    Manage Businesses</h3>
+                                <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0.25rem 0 0 0;">Switch
+                                    active business profile, edit details, or add a new business profile.</p>
+                            </div>
+                            <button type="button" class="btn btn-primary" onclick="openBusinessModal()"
+                                style="font-size: 0.85rem; padding: 0.45rem 0.9rem; display: flex; align-items: center; gap: 0.35rem;">
+                                <span>+</span> Add New Business
+                            </button>
+                        </div>
+                        <div id="settingsBusinessesList" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                            <!-- Businesses injected dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Cashier Name Modal -->
+    <div id="cashierModal" class="modal-overlay" onclick="closeCashierModal()">
+        <div class="modal" style="max-width: 400px;" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <h3 style="margin: 0;">Select Cashier</h3>
+                    <label class="theme-toggle" onclick="event.stopPropagation()">
+                        <input type="checkbox" id="themeCheckbox" onchange="toggleTheme()">
+                        <span class="theme-slider">
+                            <span class="theme-icon moon-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor">
+                                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                                </svg>
+                            </span>
+                            <span class="theme-icon sun-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor">
+                                    <circle cx="12" cy="12" r="5"></circle>
+                                    <line x1="12" y1="1" x2="12" y2="3"></line>
+                                    <line x1="12" y1="21" x2="12" y2="23"></line>
+                                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                                    <line x1="1" y1="12" x2="3" y2="12"></line>
+                                    <line x1="21" y1="12" x2="23" y2="12"></line>
+                                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                                </svg>
+                            </span>
+                        </span>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div id="cashierListContainer">
+                    <!-- List of cashiers will be injected here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/nepali-date-converter.umd.js"></script>
+    <script src="js/nepalidate.js"></script>
+    <script src="js/theme.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/business.js"></script>
+    <script src="js/cashier.js"></script>
+    <script src="js/notifications.js"></script>
+    <script src="js/settings.js"></script>
+    <script src="js/sw-register.js"></script>
+    <script src="js/sidebar-brand.js"></script>
+    <script src="js/sidebar.js"></script>
+</body>
+
+</html>
